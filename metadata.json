@@ -1,0 +1,6 @@
+{
+  "name": "Atende Recentro 2025 - Agendamento",
+  "description": "Um sistema web para agendamento de visitas no evento Atende Recentro 2025, permitindo a escolha entre Fluxo Guiado e Atendimento Direto, com gerenciamento de vagas por horário.",
+  "requestFramePermissions": [],
+  "prompt": ""
+}
