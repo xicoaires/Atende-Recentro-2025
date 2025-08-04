@@ -1,26 +1,17 @@
 
-export const EVENT_DATES = ['07/10/2025', '08/10/2025'];
+import { Agency } from './types';
 
-export const TIME_SLOTS = [
-  '14:00–15:00',
-  '15:00–16:00',
-  '16:00–17:00',
-  '17:00–18:00',
-  '18:00–19:00',
-];
+export const EVENT_DATES = ['2025-10-07', '2025-10-08'];
+export const TIMESLOTS = ['14:00-15:00', '15:00-16:00', '16:00-17:00', '17:00-18:00', '18:00-19:00'];
+export const AGENCIES = Object.values(Agency);
 
-export const STATIONS = [
-  'Gabinete do Centro',
-  'Secretaria de Finanças (SEFIN)',
-  'Secretaria de Política Urbana (Licenciamento/DPPC)',
-  'CAU/PE',
-  'IPHAN',
-  '1º Cartório de Imóveis',
-  'SEBRAE',
-];
+export const CAPACITY_PER_HOUR = {
+  total: 20,
+  guided: 15,
+  direct: 5,
+};
 
-export const CAPACITY = {
-  GUIDED: 15,
-  DIRECT: 5,
-  TOTAL: 20,
+export const ADMIN_CREDENTIALS = {
+  login: 'Recentro',
+  password: 'AtendeRec@2025'
 };

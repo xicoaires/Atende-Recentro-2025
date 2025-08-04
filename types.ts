@@ -1,7 +1,17 @@
 
-export enum ServiceType {
+export enum AttendanceType {
   GUIDED = 'Fluxo Guiado',
   DIRECT = 'Atendimento Direto',
+}
+
+export enum Agency {
+  GABINETE = 'Gabinete do Centro',
+  SEFIN = 'Secretaria de Finanças (SEFIN)',
+  POLITICA_URBANA = 'Secretaria de Política Urbana (Licenciamento/DPPC)',
+  CAU_PE = 'CAU/PE',
+  IPHAN = 'IPHAN',
+  CARTORIO = '1º Cartório de Imóveis',
+  SEBRAE = 'SEBRAE',
 }
 
 export interface Appointment {
@@ -10,18 +20,20 @@ export interface Appointment {
   email: string;
   phone: string;
   cpf: string;
-  mainInterest: string;
   propertyAddress: string;
-  serviceType: ServiceType;
-  station?: string;
-  visitDay: string;
-  visitTime: string;
+  mainInterest: string;
+  attendanceType: AttendanceType;
+  agency?: Agency;
+  visitDate: string;
+  timeslot: string;
   termsAccepted: boolean;
-  checkedIn: boolean;
+  present: boolean;
 }
 
-export interface TimeSlotStatus {
+export interface TimeslotStatus {
   time: string;
-  available: boolean;
-  message: string;
+  guidedAvailable: number;
+  directAvailable: number;
+  guidedSoldOut: boolean;
+  directSoldOut: boolean;
 }
