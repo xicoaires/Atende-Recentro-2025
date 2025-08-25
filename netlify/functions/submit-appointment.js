@@ -4,7 +4,10 @@
 // npm install pg
 const { Pool } = require('pg');
 
-// The connection string is loaded from a secure environment variable
+// The connection string is loaded from a secure environment variable.
+// In your Netlify site settings, go to "Site configuration" > "Environment variables".
+// Create a new variable with the Key "DATABASE_URL" and for the Value,
+// paste your full database connection string, like the one you've generated from your database provider.
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: {
