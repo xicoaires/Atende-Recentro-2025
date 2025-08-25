@@ -1,0 +1,5 @@
+{
+  "name": "Atende Recentro 2025",
+  "description": "An application for scheduling appointments for the Atende Recentro 2025 event. Users can select a service flow, choose specific agencies, and book a time slot in a multi-step form.",
+  "requestFramePermissions": []
+}
