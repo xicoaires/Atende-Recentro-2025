@@ -33,6 +33,13 @@ const generateTimeSlots = () => {
 const TIME_SLOTS = generateTimeSlots();
 
 exports.handler = async (event, context) => {
+
+    console.log("Body recebido:", event.body);
+
+  const data = JSON.parse(event.body);
+  console.log("Dados parseados:", data);
+
+  
   // We only accept POST requests
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: 'Method Not Allowed' };

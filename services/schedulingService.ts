@@ -1,11 +1,13 @@
 import { AppointmentData } from '../types';
 
+
 /**
  * Submits an appointment by sending a POST request to the backend Netlify Function.
  * @param data - The appointment data to be submitted.
  * @returns A promise that resolves to a success or failure object from the API.
  */
 export const submitAppointment = async (data: AppointmentData): Promise<{ success: boolean; message: string }> => {
+  console.log("Dados que serão enviados:", data);
   try {
     const response = await fetch('/.netlify/functions/submit-appointment', {
       method: 'POST',
