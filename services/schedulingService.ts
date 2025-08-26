@@ -1,13 +1,11 @@
 import { AppointmentData } from '../types';
 
-
 /**
- * Submits an appointment by sending a POST request to the backend Netlify Function.
+ * Submits an appointment to the backend API (Netlify Function).
  * @param data - The appointment data to be submitted.
  * @returns A promise that resolves to a success or failure object from the API.
  */
 export const submitAppointment = async (data: AppointmentData): Promise<{ success: boolean; message: string }> => {
-  console.log("Dados que serão enviados:", data);
   try {
     const response = await fetch('/.netlify/functions/submit-appointment', {
       method: 'POST',
@@ -17,21 +15,21 @@ export const submitAppointment = async (data: AppointmentData): Promise<{ succes
       body: JSON.stringify(data),
     });
 
-    const result = await response.json();
-
     if (!response.ok) {
-      // The server returned an error (4xx or 5xx)
-      // Use the message from the server if available, otherwise a generic one.
-      return { success: false, message: result.message || `Erro: ${response.statusText}` };
+      // Try to parse error message from backend, or use a generic one
+      const errorResult = await response.json().catch(() => null);
+      const message = errorResult?.message || `Erro no servidor: ${response.statusText}`;
+      return { success: false, message };
     }
 
-    return result; // Should be { success: true, message: '...' }
+    const result = await response.json();
+    return result;
 
   } catch (error) {
-    console.error('Network or parsing error:', error);
-    return {
-      success: false,
-      message: 'Não foi possível conectar ao serviço de agendamento. Verifique sua conexão e tente novamente.',
+    console.error('Network or client-side error:', error);
+    return { 
+      success: false, 
+      message: 'Ocorreu um erro de comunicação. Verifique sua conexão e tente novamente.' 
     };
   }
 };
