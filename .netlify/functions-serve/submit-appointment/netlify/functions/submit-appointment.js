@@ -4929,9 +4929,7 @@ var require_lib2 = __commonJS({
 var { Pool } = require_lib2();
 var pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: {
-    rejectUnauthorized: false
-  }
+  ssl: { rejectUnauthorized: false }
 });
 var MAX_APPOINTMENTS_PER_SLOT = 11;
 var generateTimeSlots = () => {
@@ -4946,109 +4944,115 @@ var generateTimeSlots = () => {
   return slots;
 };
 var TIME_SLOTS = generateTimeSlots();
-exports.handler = async (event, context) => {
+var formatTime = (timeStr) => {
+  if (/^\d{2}:\d{2}:\d{2}$/.test(timeStr)) return timeStr;
+  if (/^\d{2}:\d{2}$/.test(timeStr)) return `${timeStr}:00`;
+  return null;
+};
+exports.handler = async (event) => {
   if (event.httpMethod !== "POST") {
     return { statusCode: 405, body: "Method Not Allowed" };
   }
   try {
+    console.log("Body recebido:", event.body);
     const data = JSON.parse(event.body);
-    const { date, time, agencies, ...rest } = data;
-    if (!date || !time || !agencies || agencies.length === 0) {
+    console.log("Dados parseados:", data);
+    const {
+      fullName,
+      email,
+      phone,
+      propertyAddress,
+      profile,
+      query,
+      companyName,
+      role,
+      companyAddress,
+      lgpdConsent,
+      flowType,
+      agencies,
+      date,
+      time
+    } = data;
+    if (!fullName || !email || !propertyAddress || lgpdConsent !== true || !date || !time || !agencies || agencies.length === 0) {
       return {
         statusCode: 400,
-        body: JSON.stringify({ success: false, message: "Dados de agendamento inv\xE1lidos." })
+        body: JSON.stringify({ success: false, message: "Campos obrigat\xF3rios ausentes ou inv\xE1lidos." })
       };
     }
-    const startIndex = TIME_SLOTS.indexOf(time);
-    if (startIndex === -1) {
+    const formattedTime = formatTime(time);
+    if (!formattedTime) {
       return {
         statusCode: 400,
-        body: JSON.stringify({ success: false, message: "Hor\xE1rio de in\xEDcio inv\xE1lido." })
+        body: JSON.stringify({ success: false, message: "Formato de hor\xE1rio inv\xE1lido." })
       };
     }
-    const requiredSlots = TIME_SLOTS.slice(startIndex, startIndex + agencies.length);
-    if (requiredSlots.length < agencies.length) {
-      return {
-        statusCode: 400,
-        body: JSON.stringify({
-          success: false,
-          message: `N\xE3o h\xE1 hor\xE1rios consecutivos suficientes a partir de ${time}.`
-        })
-      };
-    }
+    const profileArray = Array.isArray(profile) ? profile : profile ? [profile] : [];
+    const lgpdBoolean = lgpdConsent === true || lgpdConsent === "true";
     const client = await pool.connect();
     try {
-      const availabilityQuery = `
-        SELECT agency, COUNT(*) as count
-        FROM appointments
-        WHERE appt_date = $1 AND appt_time = ANY($2::text[]) AND agency = ANY($3::text[])
-        GROUP BY agency, appt_time;
-      `;
-      const { rows: existingAppointments } = await client.query(availabilityQuery, [date, requiredSlots, agencies]);
-      const successfulBookings = [];
-      let unbookedAgencies = [...agencies];
-      let bookingFailed = false;
-      for (const slot of requiredSlots) {
-        let foundAgencyForSlot = false;
-        for (let i = 0; i < unbookedAgencies.length; i++) {
-          const agency = unbookedAgencies[i];
-          const count = existingAppointments.find((a) => a.agency === agency && a.appt_time === slot)?.count || 0;
-          if (count < MAX_APPOINTMENTS_PER_SLOT) {
-            successfulBookings.push({ agency, time: slot });
-            unbookedAgencies.splice(i, 1);
-            foundAgencyForSlot = true;
-            break;
-          }
-        }
-        if (!foundAgencyForSlot) {
-          bookingFailed = true;
-          break;
-        }
-      }
-      if (bookingFailed) {
-        return {
-          statusCode: 409,
-          // Conflict
-          body: JSON.stringify({
-            success: false,
-            message: `Conflito de agendamento. Um dos hor\xE1rios a partir de ${time} n\xE3o est\xE1 mais dispon\xEDvel. Por favor, tente outro hor\xE1rio.`
-          })
-        };
-      }
       await client.query("BEGIN");
+      const successfulBookings = [];
+      for (const agency of agencies) {
+        const checkRes = await client.query(
+          `SELECT COUNT(*) as count
+           FROM appointments
+           WHERE appt_date = $1 AND appt_time = $2 AND agency = $3;`,
+          [date, formattedTime, agency]
+        );
+        const count = parseInt(checkRes.rows[0].count || "0", 10);
+        if (count < MAX_APPOINTMENTS_PER_SLOT) {
+          successfulBookings.push({ agency, time: formattedTime });
+        } else {
+          await client.query("ROLLBACK");
+          return {
+            statusCode: 409,
+            body: JSON.stringify({
+              success: false,
+              message: `Conflito de agendamento para ${formattedTime} na ag\xEAncia ${agency}. Tente outro hor\xE1rio.`
+            })
+          };
+        }
+      }
       const insertQuery = `
-        INSERT INTO appointments (full_name, email, phone, property_address, profile, query, company_name, role, company_address, lgpd_consent, flow_type, agency, appt_date, appt_time)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14);
+        INSERT INTO appointments (
+          full_name, email, phone, property_address, profile, query,
+          company_name, role, company_address, lgpd_consent, flow_type,
+          agency, appt_date, appt_time
+        ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14);
       `;
       for (const booking of successfulBookings) {
         await client.query(insertQuery, [
-          rest.fullName,
-          rest.email,
-          rest.phone,
-          rest.propertyAddress,
-          rest.profile,
-          rest.query,
-          rest.companyName,
-          rest.role,
-          rest.companyAddress,
-          rest.lgpdConsent,
-          rest.flowType,
+          fullName,
+          email,
+          phone || null,
+          propertyAddress,
+          profileArray.length > 0 ? profileArray : null,
+          query || null,
+          companyName || null,
+          role || null,
+          companyAddress || null,
+          lgpdBoolean,
+          flowType || null,
           booking.agency,
           date,
           booking.time
         ]);
       }
       await client.query("COMMIT");
-      return {
-        statusCode: 200,
-        body: JSON.stringify({ success: true, message: "Agendamento confirmado com sucesso!" })
-      };
+      return { statusCode: 200, body: JSON.stringify({ success: true, message: "Agendamento confirmado!" }) };
     } catch (dbError) {
-      await client.query("ROLLBACK");
+      try {
+        await client.query("ROLLBACK");
+      } catch (e) {
+      }
       console.error("Database Error:", dbError);
       return {
         statusCode: 500,
-        body: JSON.stringify({ success: false, message: "Erro no servidor ao salvar o agendamento." })
+        body: JSON.stringify({
+          success: false,
+          message: "Erro no servidor ao salvar o agendamento.",
+          error: dbError.message
+        })
       };
     } finally {
       client.release();
@@ -5057,7 +5061,7 @@ exports.handler = async (event, context) => {
     console.error("Handler Error:", error);
     return {
       statusCode: 400,
-      body: JSON.stringify({ success: false, message: "Requisi\xE7\xE3o mal formatada." })
+      body: JSON.stringify({ success: false, message: "Requisi\xE7\xE3o mal formatada.", error: error.message })
     };
   }
 };
