@@ -3,6 +3,8 @@ export enum ProfileType {
   Owner = "Proprietário de Imóvel no Centro",
   Architect = "Arquiteto",
   Engineer = "Engenheiro",
+  PublicEmployee = "Funcionário Público",
+  Other = "Outros",
 }
 
 export interface AppointmentData {
@@ -11,12 +13,12 @@ export interface AppointmentData {
   phone: string;
   propertyAddress: string;
   profile: ProfileType[];
+  otherProfileDescription?: string; // <-- adicionado aqui
   query: string;
   companyName?: string;
   role?: string;
   companyAddress?: string;
   lgpdConsent: boolean;
-  agencies: string[];
   date: string;
   selectedTimes: Record<string, string>;
 }

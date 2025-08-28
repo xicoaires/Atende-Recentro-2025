@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "nodemailer": "^7.0.5",
     "pg": "^8.16.3",
     "react": "^19.1.1",
     "react-dom": "^19.1.1"

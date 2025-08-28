@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { AppointmentData } from './types';
+import { AppointmentData, ProfileType } from './types';
 import { EVENT_DATES } from './constants';
 import { submitAppointment } from './services/schedulingService';
 
@@ -15,14 +15,14 @@ const initialFormData: AppointmentData = {
   phone: '',
   propertyAddress: '',
   profile: [],
+  otherProfileDescription: '',
   query: '',
   companyName: '',
   role: '',
   companyAddress: '',
   lgpdConsent: false,
-  agencies: [],
-  date: EVENT_DATES[0],
-  selectedTimes: {},
+  date: EVENT_DATES[0], // 07 ou 08 de outubro
+  selectedTimes: {}, // horário preferencial
 };
 
 function App() {
@@ -46,10 +46,10 @@ function App() {
   const handleSubmit = async () => {
     setIsLoading(true);
     setError(null);
-    console.log('Dados enviados para submit:', formData);
+    console.log('Dados enviados para submit:', formData); // log detalhado
     try {
       const response = await submitAppointment(formData);
-      console.log('Resposta do submit:', response);
+      console.log('Resposta do submit:', response); // log detalhado
       if (response.success) {
         handleNext();
       } else {
@@ -73,9 +73,9 @@ function App() {
           <p className="text-gray-600 mt-2">Agendamento de Atendimento</p>
           <p className="text-sm text-gray-500">7 e 8 de Outubro de 2025 | Complexo Niágara S.A</p>
         </header>
-
+        
         <Stepper steps={steps} currentStep={currentStep} />
-
+        
         <main className="mt-8">
           {error && currentStep === 3 && (
             <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-md relative mb-6" role="alert">
@@ -83,9 +83,13 @@ function App() {
               <span className="block sm:inline ml-2">{error}</span>
             </div>
           )}
-
+          
           {currentStep === 1 && (
-            <Step1PersonalInfo data={formData} updateData={updateFormData} onNext={handleNext} />
+            <Step1PersonalInfo
+              data={formData}
+              updateData={updateFormData}
+              onNext={handleNext}
+            />
           )}
           {currentStep === 2 && (
             <Step2Scheduling
@@ -103,7 +107,12 @@ function App() {
               isLoading={isLoading}
             />
           )}
-          {currentStep === 4 && <Step4Confirmation onReset={handleReset} email={formData.email} />}
+          {currentStep === 4 && (
+            <Step4Confirmation
+              onReset={handleReset}
+              email={formData.email}
+            />
+          )}
         </main>
       </div>
     </div>
