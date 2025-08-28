@@ -1,93 +1,122 @@
-import React from 'react';
-import { AppointmentData } from '../types';
+import React, { useState } from "react";
 
-interface Step3Props {
-  data: AppointmentData;
+interface Step3ConfirmationProps {
+  formData: any;
   onBack: () => void;
   onSubmit: () => void;
-  isLoading: boolean;
 }
 
-const ReviewItem: React.FC<{ label: string; value: React.ReactNode }> = ({ label, value }) => (
-  <div>
-    <h4 className="text-sm font-medium text-gray-500">{label}</h4>
-    <p className="text-gray-800 font-semibold">{value || 'Não informado'}</p>
-  </div>
-);
+const Step3Confirmation: React.FC<Step3ConfirmationProps> = ({
+  formData,
+  onBack,
+  onSubmit,
+}) => {
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
 
-const Step3Review: React.FC<Step3Props> = ({ data, onBack, onSubmit, isLoading }) => {
+  const handleSubmit = async () => {
+    setLoading(true);
+    setMessage(null);
+
+    try {
+      console.log("Enviando dados para API:", formData);
+
+      const response = await fetch("http://localhost:5000/api/submit-appointment", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+
+      const result = await response.json();
+      console.log("Resposta da API:", result);
+
+      if (result.success) {
+        let resumo = "✅ Agendamento realizado com sucesso!\n\n";
+        result.created.forEach((c: any) => {
+          resumo += `• ${c.agency} → ID: ${c.id}\n`;
+        });
+        setMessage(resumo);
+        onSubmit();
+      } else {
+        setMessage("❌ Erro ao confirmar agendamento: " + (result.error || "Erro desconhecido"));
+      }
+    } catch (error) {
+      console.error("Erro no fetch:", error);
+      setMessage("❌ Erro de conexão com o servidor");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <div className="space-y-8">
-      <h2 className="text-xl font-semibold text-gray-700">3. Revise suas Informações</h2>
-      
-      <div className="p-6 bg-slate-50 rounded-lg border border-slate-200 space-y-6">
-          <h3 className="text-lg font-semibold text-gray-800 border-b pb-2">Dados Pessoais</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
-            <ReviewItem label="Nome Completo" value={data.fullName} />
-            <ReviewItem label="E-mail" value={data.email} />
-            <ReviewItem label="Telefone" value={data.phone} />
-            <ReviewItem label="Endereço do Imóvel" value={data.propertyAddress} />
-          </div>
+    <div className="p-4">
+      <h2 className="text-xl font-bold mb-3">Confirmação</h2>
+      <p className="mb-2">Confira os dados antes de confirmar o agendamento:</p>
 
-          {data.profile.length > 0 && (
-            <div className="pt-4 border-t border-slate-200">
-              <h3 className="text-lg font-semibold text-gray-800 border-b pb-2">Perfil</h3>
-              <p className="text-gray-800 font-semibold mt-2">{data.profile.join(', ')}</p>
-            </div>
-          )}
-
-          {data.profile.includes('Pessoa Jurídica') && (
-            <div className="pt-4 border-t border-slate-200">
-              <h3 className="text-lg font-semibold text-gray-800 border-b pb-2">Dados da Empresa</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 mt-2">
-                <ReviewItem label="Nome da Empresa" value={data.companyName} />
-                <ReviewItem label="Cargo" value={data.role} />
-                <ReviewItem label="Endereço da Empresa" value={data.companyAddress} />
-              </div>
-            </div>
-          )}
-
-          <div className="pt-4 border-t border-slate-200">
-            <h3 className="text-lg font-semibold text-gray-800 border-b pb-2">Detalhes do Agendamento</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 mt-2">
-              <ReviewItem label="Data" value={new Date(data.date + 'T00:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })} />
-            </div>
-          </div>
-          
-          <div className="pt-4 border-t border-slate-200">
-              <h3 className="text-lg font-semibold text-gray-800 border-b pb-2">Órgãos e Horários</h3>
-              <div className="mt-2">
-                <ul className="list-disc list-inside space-y-1 text-gray-800">
-                  {data.agencies.map(agency => (
-                    <li key={agency}>
-                      {agency} - <span className="font-semibold">{data.selectedTimes?.[agency] || 'Horário não selecionado'}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-          </div>
+      <div className="mb-3">
+        <strong>Nome:</strong> {formData.fullName} <br />
+        <strong>Email:</strong> {formData.email} <br />
+        <strong>Telefone:</strong> {formData.phone} <br />
+        <strong>Endereço do imóvel:</strong> {formData.propertyAddress} <br />
+        <strong>Perfil:</strong> {formData.profile.join(", ")} <br />
+        {formData.query && (
+          <>
+            <strong>Dúvida:</strong> {formData.query} <br />
+          </>
+        )}
+        {formData.companyName && (
+          <>
+            <strong>Empresa:</strong> {formData.companyName} <br />
+            <strong>Cargo:</strong> {formData.role} <br />
+            <strong>Endereço da empresa:</strong> {formData.companyAddress} <br />
+          </>
+        )}
+        <strong>Consentimento LGPD:</strong>{" "}
+        {formData.lgpdConsent ? "Sim" : "Não"} <br />
+        <strong>Data escolhida:</strong> {formData.date} <br />
       </div>
 
-      <div className="flex justify-between mt-8">
-        <button onClick={onBack} disabled={isLoading} className="bg-gray-200 text-gray-800 font-bold py-2 px-6 rounded-lg hover:bg-gray-300 transition-colors disabled:opacity-50">
+      <div className="mb-3">
+        <h3 className="font-semibold">Órgãos selecionados e horários:</h3>
+        <ul className="list-disc ml-6">
+          {Object.entries(formData.selectedTimes).map(([agency, time]) => (
+            <li key={agency}>
+              <strong>{agency}:</strong> {time}
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      {message && (
+        <div
+          className={`p-3 mb-3 rounded ${
+            message.startsWith("✅")
+              ? "bg-green-100 text-green-800"
+              : "bg-red-100 text-red-800"
+          }`}
+        >
+          <pre>{message}</pre>
+        </div>
+      )}
+
+      <div className="flex justify-between">
+        <button
+          onClick={onBack}
+          disabled={loading}
+          className="px-4 py-2 rounded bg-gray-400 text-white hover:bg-gray-500"
+        >
           Voltar
         </button>
-        <button onClick={onSubmit} disabled={isLoading} className="bg-green-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-green-700 transition-colors flex items-center disabled:bg-green-400">
-          {isLoading ? (
-            <>
-              <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-              Confirmando...
-            </>
-          ) : (
-            'Confirmar Agendamento'
-          )}
+        <button
+          onClick={handleSubmit}
+          disabled={loading}
+          className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700"
+        >
+          {loading ? "Confirmando..." : "Confirmar"}
         </button>
       </div>
     </div>
   );
 };
 
-export default Step3Review;
+export default Step3Confirmation;

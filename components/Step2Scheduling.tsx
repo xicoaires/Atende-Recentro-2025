@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { AppointmentData } from '../types';
-import { AGENCIES, EVENT_DATES, TIME_SLOTS } from '../constants';
+import { AGENCIES } from '../constants';
+import { fetchAvailability } from '../services/schedulingService';
 
 interface Step2Props {
   data: AppointmentData;
@@ -9,190 +10,131 @@ interface Step2Props {
   onBack: () => void;
 }
 
-interface AvailabilityResponse {
-  success: boolean;
-  bookedSlotsByAgency: Record<string, string[]>;
-  message?: string;
-}
-
 const Step2Scheduling: React.FC<Step2Props> = ({ data, updateData, onNext, onBack }) => {
-  const [error, setError] = useState<string | null>(null);
   const [availability, setAvailability] = useState<Record<string, string[]>>({});
-  const [isLoading, setIsLoading] = useState(false);
+  const [selectedAgencies, setSelectedAgencies] = useState<string[]>(data.agencies || []);
+  const [loadingAvailability, setLoadingAvailability] = useState(false);
+
+  const allAgenciesSelected = selectedAgencies.length === AGENCIES.length;
 
   useEffect(() => {
-    if (data.agencies.length === 0 || !data.date) {
-      setAvailability({});
-      return;
-    }
+    const loadAvailability = async () => {
+      if (selectedAgencies.length === 0) return;
 
-    setIsLoading(true);
-    setError(null);
-
-    const fetchAvailability = async () => {
+      console.log('Fetching availability for date:', data.date, 'and agencies:', selectedAgencies);
+      setLoadingAvailability(true);
       try {
-        console.log('Fetching availability for date:', data.date, 'and agencies:', data.agencies);
-
-        const response = await fetch('/.netlify/functions/check-availability', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            date: data.date,
-            agencies: data.agencies,
-          }),
-        });
-
-        const text = await response.text();
-        console.log('Raw response from API:', text);
-
-        const result: AvailabilityResponse = JSON.parse(text);
-        console.log('Parsed response:', result);
-
-        if (result.success) {
-          setAvailability(result.bookedSlotsByAgency);
-        } else {
-          setError(result.message || 'Erro ao verificar horários.');
+        const response = await fetchAvailability(data.date, selectedAgencies);
+        console.log('Raw response from API:', response);
+        if (response.success) {
+          setAvailability(response.bookedSlotsByAgency || {});
+          console.log('Parsed response:', response);
         }
-      } catch (e: any) {
-        console.error('Error fetching availability:', e);
-        setError('Erro ao verificar a disponibilidade. Tente novamente.');
+      } catch (err) {
+        console.error('Erro no fetchAvailability:', err);
       } finally {
-        setIsLoading(false);
+        setLoadingAvailability(false);
       }
     };
 
-    fetchAvailability();
-  }, [data.date, data.agencies]);
+    loadAvailability();
+  }, [data.date, selectedAgencies]);
 
-  const handleAgencyChange = (agency: string) => {
-    const newAgencies = data.agencies.includes(agency)
-      ? data.agencies.filter(a => a !== agency)
-      : [...data.agencies, agency];
-
-    const newSelectedTimes = { ...data.selectedTimes };
-    if (!data.agencies.includes(agency)) {
-      // órgão adicionado: não faz nada
-    } else {
-      // órgão removido: remove horário selecionado
-      delete newSelectedTimes[agency];
-    }
-
-    updateData({ agencies: newAgencies, selectedTimes: newSelectedTimes });
+  const toggleAgency = (agency: string) => {
+    const newSelection = selectedAgencies.includes(agency)
+      ? selectedAgencies.filter(a => a !== agency)
+      : [...selectedAgencies, agency];
+    setSelectedAgencies(newSelection);
+    updateData({ agencies: newSelection });
   };
 
-  const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.checked) {
-      updateData({ agencies: AGENCIES, selectedTimes: {} });
+  const toggleAllAgencies = () => {
+    if (allAgenciesSelected) {
+      setSelectedAgencies([]);
+      updateData({ agencies: [] });
     } else {
-      updateData({ agencies: [], selectedTimes: {} });
+      setSelectedAgencies([...AGENCIES]);
+      updateData({ agencies: [...AGENCIES] });
     }
   };
 
   const handleTimeChange = (agency: string, time: string) => {
-    const newSelectedTimes = { ...data.selectedTimes, [agency]: time };
-    updateData({ selectedTimes: newSelectedTimes });
+    updateData({
+      selectedTimes: { ...data.selectedTimes, [agency]: time },
+    });
   };
 
-  const handleNextClick = () => {
-    if (data.agencies.length === 0) {
-      setError('Selecione pelo menos um órgão.');
-      return;
-    }
-
-    const allTimesSelected = data.agencies.every(agency => data.selectedTimes[agency]);
-    if (!allTimesSelected) {
-      setError('Selecione um horário para cada órgão.');
-      return;
-    }
-
-    setError(null);
-    onNext();
-  };
-
-  const allAgenciesSelected = data.agencies.length === AGENCIES.length;
-
-  const isTimeDisabled = (agency: string, time: string) => {
-    const booked = availability[agency]?.includes(time);
-    const selectedElsewhere = Object.entries(data.selectedTimes).some(
-      ([otherAgency, selectedTime]) => otherAgency !== agency && selectedTime === time
+  const isTimeDisabled = (time: string, currentAgency: string) => {
+    // Desabilita se já foi selecionado em outro órgão
+    return Object.entries(data.selectedTimes).some(
+      ([agency, selectedTime]) => agency !== currentAgency && selectedTime === time
     );
-    return booked || selectedElsewhere;
   };
+
+  const timeSlots = ['09:00', '09:30', '10:00', '10:30', '11:00', '11:30', '14:00', '14:30', '15:00', '15:30', '16:00', '16:30'];
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <h2 className="text-xl font-semibold text-gray-700">2. Agendamento</h2>
 
-      <div className="space-y-4">
-        <h3 className="text-lg font-semibold text-gray-700">Órgãos de Atendimento</h3>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-          <label className="flex items-center space-x-2">
-            <input
-              type="checkbox"
-              checked={allAgenciesSelected}
-              onChange={handleSelectAll}
-              className="rounded text-blue-600 focus:ring-blue-500 h-4 w-4"
-            />
-            <span className="text-gray-700 font-bold">Selecionar Todos</span>
-          </label>
-          {AGENCIES.map(agency => (
-            <label key={agency} className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                checked={data.agencies.includes(agency)}
-                onChange={() => handleAgencyChange(agency)}
-                className="rounded text-blue-600 focus:ring-blue-500 h-4 w-4"
-              />
-              <span className="text-gray-700">{agency}</span>
-            </label>
-          ))}
-        </div>
+      <div className="flex items-center space-x-2">
+        <input type="checkbox" checked={allAgenciesSelected} onChange={toggleAllAgencies} />
+        <label className="font-medium">Selecionar todos os órgãos</label>
       </div>
 
-      {data.agencies.length > 0 && data.date && (
-        <div className="space-y-6 mt-4">
-          {data.agencies.map(agency => (
-            <div key={agency}>
-              <h4 className="text-md font-semibold text-gray-700 mb-2">{agency}</h4>
-              <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-2">
-                {TIME_SLOTS.map(time => {
-                  const disabled = isTimeDisabled(agency, time);
-                  const isSelected = data.selectedTimes[agency] === time;
+      {AGENCIES.map(agency => (
+        <div key={agency} className="p-4 bg-slate-50 rounded-lg border border-slate-200">
+          <div className="flex items-center space-x-2">
+            <input
+              type="checkbox"
+              checked={selectedAgencies.includes(agency)}
+              onChange={() => toggleAgency(agency)}
+            />
+            <h3 className="text-lg font-semibold">{agency}</h3>
+          </div>
 
-                  return (
-                    <button
-                      key={time}
-                      onClick={() => handleTimeChange(agency, time)}
-                      disabled={disabled}
-                      className={`p-2 rounded-lg text-sm font-medium transition-colors
-                        ${isSelected ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-800'}
-                        ${disabled ? 'bg-gray-50 text-gray-400 cursor-not-allowed' : 'hover:bg-blue-100'}
-                      `}
-                      title={disabled ? 'Indisponível' : ''}
-                    >
-                      {time}
-                    </button>
-                  );
-                })}
-              </div>
+          {selectedAgencies.includes(agency) && (
+            <div className="mt-2">
+              {loadingAvailability ? (
+                <p>Carregando horários disponíveis...</p>
+              ) : (
+                <div className="grid grid-cols-3 gap-2">
+                  {timeSlots.map(time => {
+                    const isBooked = availability[agency]?.includes(time);
+                    const isDisabled = isBooked || isTimeDisabled(time, agency);
+
+                    return (
+                      <button
+                        key={time}
+                        disabled={isDisabled}
+                        onClick={() => handleTimeChange(agency, time)}
+                        className={`py-2 px-3 rounded-lg border ${
+                          data.selectedTimes[agency] === time
+                            ? 'bg-blue-600 text-white'
+                            : isDisabled
+                            ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                            : 'bg-white hover:bg-gray-100'
+                        }`}
+                      >
+                        {time}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
             </div>
-          ))}
+          )}
         </div>
-      )}
-
-      {isLoading && <p className="text-sm text-gray-500">Verificando horários...</p>}
-      {error && <p className="text-sm text-red-500">{error}</p>}
+      ))}
 
       <div className="flex justify-between mt-8">
-        <button
-          onClick={onBack}
-          className="bg-gray-200 text-gray-800 font-bold py-2 px-6 rounded-lg hover:bg-gray-300 transition-colors"
-        >
+        <button onClick={onBack} className="bg-gray-200 text-gray-800 font-bold py-2 px-6 rounded-lg hover:bg-gray-300 transition-colors">
           Voltar
         </button>
         <button
-          onClick={handleNextClick}
-          className="bg-blue-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-blue-700 transition-colors"
+          onClick={onNext}
+          disabled={selectedAgencies.length === 0 || Object.keys(data.selectedTimes).length !== selectedAgencies.length}
+          className="bg-blue-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
         >
           Próximo
         </button>
