@@ -1,12 +1,11 @@
-// submit-appointment.js
-import pool from "./db.js"; // seu pool configurado em db.js
+import pool from "./db.js"; // importa o pool corretamente
 import nodemailer from "nodemailer";
 
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
-    user: process.env.EMAIL_USER,         // ex: seu email@gmail.com
-    pass: process.env.GMAIL_APP_PASSWORD, // App Password do Gmail
+    user: process.env.EMAIL_USER,
+    pass: process.env.GMAIL_APP_PASSWORD,
   },
 });
 
@@ -28,7 +27,6 @@ export const handler = async (event) => {
     phone,
     propertyAddress,
     profile,
-    otherProfileDescription,
     query,
     companyName,
     role,
@@ -41,9 +39,8 @@ export const handler = async (event) => {
   let client;
 
   try {
-    client = await pool.connect(); // pega conexão do pool
+    client = await pool.connect(); // pega conexão do pool corretamente
 
-    // insere no banco
     const result = await client.query(
       `INSERT INTO appointments 
         (full_name, email, phone, property_address, profile, query, company_name, role, company_address, lgpd_consent, appt_date, appt_time)
@@ -66,7 +63,7 @@ export const handler = async (event) => {
 
     const appointmentId = result.rows[0].id;
 
-    // envia e-mail de confirmação
+    // envia e-mail
     await transporter.sendMail({
       from: process.env.EMAIL_USER,
       to: email,
@@ -85,6 +82,6 @@ export const handler = async (event) => {
       body: JSON.stringify({ success: false, message: err.message }),
     };
   } finally {
-    if (client) client.release(); // sempre libera a conexão
+    if (client) client.release(); // libera conexão
   }
 };
