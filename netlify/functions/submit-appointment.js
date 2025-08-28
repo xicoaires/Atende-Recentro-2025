@@ -49,7 +49,7 @@ export async function handler(event, context) {
     const transporter = nodemailer.createTransport({
       service: "gmail",
       auth: {
-        user: process.env.SMTP_USER,
+        user: process.env.EMAIL_USER,
         pass: process.env.GMAIL_APP_PASSWORD, // senha de app do Gmail
       },
     });
