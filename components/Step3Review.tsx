@@ -1,6 +1,5 @@
 import React from 'react';
 import { AppointmentData } from '../types';
-import { TIME_SLOTS } from '../constants';
 
 interface Step3Props {
   data: AppointmentData;
@@ -28,36 +27,42 @@ const Step3Review: React.FC<Step3Props> = ({ data, onBack, onSubmit, isLoading }
             <ReviewItem label="E-mail" value={data.email} />
             <ReviewItem label="Telefone" value={data.phone} />
             <ReviewItem label="Endereço do Imóvel" value={data.propertyAddress} />
-            <ReviewItem label="Perfil" value={data.profile.join(', ')} />
-            <ReviewItem label="Dúvida" value={data.query} />
-            <ReviewItem label="Empresa" value={data.companyName} />
-            <ReviewItem label="Cargo" value={data.role} />
-            <ReviewItem label="Endereço da Empresa" value={data.companyAddress} />
           </div>
-      </div>
-      
-       <div className="p-6 bg-slate-50 rounded-lg border border-slate-200 space-y-6">
-          <h3 className="text-lg font-semibold text-gray-800 border-b pb-2">Detalhes do Agendamento</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-4">
-            <ReviewItem label="Data" value={new Date(data.date + 'T00:00:00').toLocaleDateString('pt-BR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })} />
-            <ReviewItem label="Horário de Início" value={`${data.time}h`} />
-            <ReviewItem label="Tipo de Atendimento" value={data.flowType} />
-          </div>
-          <div className="pt-4 border-t border-slate-300 mt-4">
-             <div>
-                <h4 className="text-sm font-medium text-gray-500">Órgãos e Horários Agendados</h4>
-                <p className="text-xs text-gray-500 mb-2">Seu atendimento começará às {data.time}h e seguirá a sequência abaixo, um a cada 15 minutos.</p>
-                <ul className="list-disc list-inside mt-2 text-gray-800 space-y-1 text-sm">
-                  {(() => {
-                    const startIndex = TIME_SLOTS.indexOf(data.time);
-                    if (startIndex === -1) return <li>Erro ao calcular horários.</li>;
-                    if (!data.agencies || data.agencies.length === 0) return <li>Nenhum órgão selecionado.</li>;
 
-                    return data.agencies.map((agency, index) => {
-                      const slotTime = TIME_SLOTS[startIndex + index] || 'N/A';
-                      return <li key={agency}>{agency} - <span className="font-semibold">{slotTime}h</span></li>;
-                    });
-                  })()}
+          {data.profile.length > 0 && (
+            <div className="pt-4 border-t border-slate-200">
+              <h3 className="text-lg font-semibold text-gray-800 border-b pb-2">Perfil</h3>
+              <p className="text-gray-800 font-semibold mt-2">{data.profile.join(', ')}</p>
+            </div>
+          )}
+
+          {data.profile.includes('Pessoa Jurídica') && (
+            <div className="pt-4 border-t border-slate-200">
+              <h3 className="text-lg font-semibold text-gray-800 border-b pb-2">Dados da Empresa</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 mt-2">
+                <ReviewItem label="Nome da Empresa" value={data.companyName} />
+                <ReviewItem label="Cargo" value={data.role} />
+                <ReviewItem label="Endereço da Empresa" value={data.companyAddress} />
+              </div>
+            </div>
+          )}
+
+          <div className="pt-4 border-t border-slate-200">
+            <h3 className="text-lg font-semibold text-gray-800 border-b pb-2">Detalhes do Agendamento</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 mt-2">
+              <ReviewItem label="Data" value={new Date(data.date + 'T00:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })} />
+            </div>
+          </div>
+          
+          <div className="pt-4 border-t border-slate-200">
+              <h3 className="text-lg font-semibold text-gray-800 border-b pb-2">Órgãos e Horários</h3>
+              <div className="mt-2">
+                <ul className="list-disc list-inside space-y-1 text-gray-800">
+                  {data.agencies.map(agency => (
+                    <li key={agency}>
+                      {agency} - <span className="font-semibold">{data.selectedTimes?.[agency] || 'Horário não selecionado'}</span>
+                    </li>
+                  ))}
                 </ul>
               </div>
           </div>
@@ -76,7 +81,9 @@ const Step3Review: React.FC<Step3Props> = ({ data, onBack, onSubmit, isLoading }
               </svg>
               Confirmando...
             </>
-          ) : 'Confirmar Agendamento'}
+          ) : (
+            'Confirmar Agendamento'
+          )}
         </button>
       </div>
     </div>

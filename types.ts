@@ -1,14 +1,8 @@
-
 export enum ProfileType {
   Investor = "Investidor",
   Owner = "Proprietário de Imóvel no Centro",
   Architect = "Arquiteto",
   Engineer = "Engenheiro",
-}
-
-export enum FlowType {
-  Complete = "Fluxo completo (todos os órgãos em sequência)",
-  Specific = "Fluxo específico (você escolhe os órgãos)",
 }
 
 export interface AppointmentData {
@@ -22,8 +16,7 @@ export interface AppointmentData {
   role?: string;
   companyAddress?: string;
   lgpdConsent: boolean;
-  flowType: FlowType;
   agencies: string[];
   date: string;
-  time: string;
+  selectedTimes: Record<string, string>;
 }

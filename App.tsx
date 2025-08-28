@@ -1,6 +1,5 @@
-
 import React, { useState, useCallback } from 'react';
-import { AppointmentData, FlowType, ProfileType } from './types';
+import { AppointmentData, ProfileType } from './types';
 import { AGENCIES, EVENT_DATES } from './constants';
 import { submitAppointment } from './services/schedulingService';
 
@@ -21,10 +20,9 @@ const initialFormData: AppointmentData = {
   role: '',
   companyAddress: '',
   lgpdConsent: false,
-  flowType: FlowType.Complete,
-  agencies: AGENCIES,
+  agencies: [],
   date: EVENT_DATES[0],
-  time: '',
+  selectedTimes: {},
 };
 
 function App() {
@@ -46,21 +44,26 @@ function App() {
   };
 
   const handleSubmit = async () => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const result = await submitAppointment(formData);
-      if (result.success) {
-        handleNext();
-      } else {
-        setError(result.message);
-      }
-    } catch (e) {
-      setError('Ocorreu um erro inesperado. Tente novamente mais tarde.');
-    } finally {
-      setIsLoading(false);
+  setIsLoading(true);
+  setError(null);
+
+  console.log('Dados enviados para submit:', formData); // <-- ADICIONE AQUI
+
+  try {
+    const response = await submitAppointment(formData); 
+    if (response.success) {
+      handleNext();
+    } else {
+      setError(response.message);
     }
-  };
+  } catch (e) {
+    console.error('Erro inesperado no submit:', e);
+    setError('Ocorreu um erro inesperado. Tente novamente mais tarde.');
+  } finally {
+    setIsLoading(false);
+  }
+};
+
 
   const steps = ['Dados Pessoais', 'Agendamento', 'Revisão', 'Confirmação'];
 
