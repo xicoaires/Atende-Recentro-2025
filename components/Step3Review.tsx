@@ -8,113 +8,103 @@ interface Step3Props {
   isLoading: boolean;
 }
 
-const ReviewItem: React.FC<{ label: string; value: React.ReactNode }> = ({ label, value }) => (
-  <div>
-    <h4 className="text-sm font-medium text-gray-500">{label}</h4>
-    <p className="text-gray-800 font-semibold">{value || 'Não informado'}</p>
-  </div>
-);
-
 const Step3Review: React.FC<Step3Props> = ({ data, onBack, onSubmit, isLoading }) => {
-  if (!data) return null; // evita erro se data estiver undefined
-
   return (
-    <div className="space-y-8">
-      <h2 className="text-xl font-semibold text-gray-700">3. Revise suas Informações</h2>
+    <div className="space-y-6">
+      <h2 className="text-xl font-semibold text-gray-700 text-center">3. Revisão dos Dados</h2>
 
-      <div className="p-6 bg-slate-50 rounded-lg border border-slate-200 space-y-6">
-        <h3 className="text-lg font-semibold text-gray-800 border-b pb-2">Dados Pessoais</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
-          <ReviewItem label="Nome Completo" value={data.fullName || 'Não informado'} />
-          <ReviewItem label="E-mail" value={data.email || 'Não informado'} />
-          <ReviewItem label="Telefone" value={data.phone || 'Não informado'} />
-          <ReviewItem label="Endereço do Imóvel" value={data.propertyAddress || 'Não informado'} />
+      <div className="bg-gray-50 p-6 rounded-lg shadow-sm space-y-4">
+        <div>
+          <p className="font-medium text-gray-600">Nome Completo:</p>
+          <p className="text-gray-800">{data.fullName}</p>
         </div>
 
-        {data.profile?.length > 0 && (
-          <div className="pt-4 border-t border-slate-200">
-            <h3 className="text-lg font-semibold text-gray-800 border-b pb-2">Perfil</h3>
-            <p className="text-gray-800 font-semibold mt-2">{data.profile.join(', ')}</p>
+        <div>
+          <p className="font-medium text-gray-600">Email:</p>
+          <p className="text-gray-800">{data.email}</p>
+        </div>
+
+        {data.phone && (
+          <div>
+            <p className="font-medium text-gray-600">Telefone:</p>
+            <p className="text-gray-800">{data.phone}</p>
           </div>
         )}
 
-        {data.profile?.includes('Pessoa Jurídica') && (
-          <div className="pt-4 border-t border-slate-200">
-            <h3 className="text-lg font-semibold text-gray-800 border-b pb-2">Dados da Empresa</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 mt-2">
-              <ReviewItem label="Nome da Empresa" value={data.companyName || 'Não informado'} />
-              <ReviewItem label="Cargo" value={data.role || 'Não informado'} />
-              <ReviewItem label="Endereço da Empresa" value={data.companyAddress || 'Não informado'} />
-            </div>
+        <div>
+          <p className="font-medium text-gray-600">Endereço do Imóvel:</p>
+          <p className="text-gray-800">{data.propertyAddress}</p>
+        </div>
+
+        <div>
+          <p className="font-medium text-gray-600">Perfil:</p>
+          <p className="text-gray-800">{data.profile.join(', ')}</p>
+        </div>
+
+        {data.query && (
+          <div>
+            <p className="font-medium text-gray-600">Motivação para o Atende Recentro 2025:</p>
+            <p className="text-gray-800">{data.query}</p>
           </div>
         )}
 
-        <div className="pt-4 border-t border-slate-200">
-          <h3 className="text-lg font-semibold text-gray-800 border-b pb-2">Detalhes do Agendamento</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 mt-2">
-            <ReviewItem
-              label="Data"
-              value={
-                data.date
-                  ? new Date(data.date + 'T00:00:00').toLocaleDateString('pt-BR', {
-                      day: '2-digit',
-                      month: 'long',
-                      year: 'numeric',
-                    })
-                  : 'Não informado'
-              }
-            />
+        {data.companyName && (
+          <div>
+            <p className="font-medium text-gray-600">Nome da Empresa:</p>
+            <p className="text-gray-800">{data.companyName}</p>
           </div>
+        )}
+
+        {data.role && (
+          <div>
+            <p className="font-medium text-gray-600">Cargo/Função:</p>
+            <p className="text-gray-800">{data.role}</p>
+          </div>
+        )}
+
+        {data.companyAddress && (
+          <div>
+            <p className="font-medium text-gray-600">Endereço da Empresa:</p>
+            <p className="text-gray-800">{data.companyAddress}</p>
+          </div>
+        )}
+
+        <div>
+          <p className="font-medium text-gray-600">Consentimento LGPD:</p>
+          <p className="text-gray-800">{data.lgpdConsent ? 'Autorizado' : 'Não autorizado'}</p>
         </div>
 
-        <div className="pt-4 border-t border-slate-200">
-          <h3 className="text-lg font-semibold text-gray-800 border-b pb-2">Órgãos e Horários</h3>
-          <div className="mt-2">
-            <ul className="list-disc list-inside space-y-1 text-gray-800">
-              {data.agencies?.map((agency) => (
-                <li key={agency}>
-                  {agency} -{' '}
-                  <span className="font-semibold">{data.selectedTimes?.[agency] || 'Horário não selecionado'}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
+        <div>
+          <p className="font-medium text-gray-600">Data do Agendamento:</p>
+          <p className="text-gray-800">{data.date.split('-').reverse().join('/')}</p>
         </div>
+
+        {data.selectedTimes.preference && (
+          <div>
+            <p className="font-medium text-gray-600">Hora de Preferência:</p>
+            <p className="text-gray-800">{data.selectedTimes.preference}</p>
+          </div>
+        )}
       </div>
 
-      <div className="flex justify-between mt-8">
+      <div className="flex justify-between mt-6">
         <button
           onClick={onBack}
-          disabled={isLoading}
-          className="bg-gray-200 text-gray-800 font-bold py-2 px-6 rounded-lg hover:bg-gray-300 transition-colors disabled:opacity-50"
+          className="bg-gray-300 text-gray-700 font-bold py-2 px-6 rounded-lg hover:bg-gray-400 transition-colors"
         >
           Voltar
         </button>
+
         <button
           onClick={onSubmit}
           disabled={isLoading}
-          className="bg-green-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-green-700 transition-colors flex items-center disabled:bg-green-400"
+          className={`font-bold py-2 px-6 rounded-lg transition-colors ${
+            isLoading
+              ? 'bg-gray-400 text-gray-700 cursor-not-allowed'
+              : 'bg-blue-600 text-white hover:bg-blue-700'
+          }`}
         >
-          {isLoading ? (
-            <>
-              <svg
-                className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-              >
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path
-                  className="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                ></path>
-              </svg>
-              Confirmando...
-            </>
-          ) : (
-            'Confirmar Agendamento'
-          )}
+          {isLoading ? 'Enviando...' : 'Confirmar Agendamento'}
         </button>
       </div>
     </div>

@@ -4930,7 +4930,6 @@ var { Pool } = require_lib2();
 var pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false }
-  // necessário para Neon
 });
 var MAX_APPOINTMENTS_PER_SLOT = 11;
 exports.handler = async (event) => {
@@ -4939,8 +4938,6 @@ exports.handler = async (event) => {
   }
   let client;
   try {
-    const data = JSON.parse(event.body);
-    console.log("Dados recebidos para submit:", data);
     const {
       fullName,
       email,
@@ -4953,11 +4950,9 @@ exports.handler = async (event) => {
       companyAddress,
       lgpdConsent,
       date,
-      agencies,
       selectedTimes
-    } = data;
-    if (!fullName || !email || !propertyAddress || !lgpdConsent || !date || !agencies || agencies.length === 0 || !selectedTimes) {
-      console.error("Erro de valida\xE7\xE3o: Campos obrigat\xF3rios ausentes");
+    } = JSON.parse(event.body);
+    if (!fullName || !email || !propertyAddress || !lgpdConsent || !date || !selectedTimes || Object.keys(selectedTimes).length === 0) {
       return {
         statusCode: 400,
         body: JSON.stringify({ success: false, message: "Erro de valida\xE7\xE3o: Campos obrigat\xF3rios ausentes." })
@@ -4966,22 +4961,18 @@ exports.handler = async (event) => {
     client = await pool.connect();
     await client.query("BEGIN");
     const checkQuery = `
-      SELECT agency, appt_time, COUNT(*)
+      SELECT appt_time, COUNT(*)
       FROM appointments
       WHERE appt_date = $1
-        AND (agency = ANY($2::text[]) AND appt_time = ANY($3::time[]))
-      GROUP BY agency, appt_time
-      HAVING COUNT(*) >= $4;
+      AND appt_time = ANY($2::time[])
+      GROUP BY appt_time
+      HAVING COUNT(*) >= $3;
     `;
-    const checkAgencies = Object.keys(selectedTimes);
-    const checkTimes = Object.values(selectedTimes);
-    console.log("Checking for conflicts on agencies:", checkAgencies, "and times:", checkTimes);
-    const resultCheck = await client.query(checkQuery, [date, checkAgencies, checkTimes, MAX_APPOINTMENTS_PER_SLOT]);
-    console.log("Conflict check result:", resultCheck.rows);
+    const times = Object.values(selectedTimes);
+    const resultCheck = await client.query(checkQuery, [date, times, MAX_APPOINTMENTS_PER_SLOT]);
     if (resultCheck.rows.length > 0) {
       await client.query("ROLLBACK");
-      const conflicts = resultCheck.rows.map((row) => `${row.agency} \xE0s ${row.appt_time.slice(0, 5)}`);
-      console.error("Conflitos detectados:", conflicts);
+      const conflicts = resultCheck.rows.map((row) => row.appt_time.slice(0, 5));
       return {
         statusCode: 409,
         body: JSON.stringify({
@@ -4994,19 +4985,10 @@ exports.handler = async (event) => {
       INSERT INTO appointments (
         full_name, email, phone, property_address, profile, query,
         company_name, role, company_address, lgpd_consent,
-        agency, appt_date, appt_time
-      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
+        appt_date, appt_time
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
     `;
-    for (const agency of agencies) {
-      const apptTime = selectedTimes[agency];
-      if (!apptTime) {
-        await client.query("ROLLBACK");
-        console.error(`Hor\xE1rio n\xE3o selecionado para o \xF3rg\xE3o: ${agency}`);
-        return {
-          statusCode: 400,
-          body: JSON.stringify({ success: false, message: `Hor\xE1rio n\xE3o selecionado para o \xF3rg\xE3o: ${agency}` })
-        };
-      }
+    for (const time of times) {
       await client.query(insertQuery, [
         fullName,
         email,
@@ -5018,14 +5000,11 @@ exports.handler = async (event) => {
         role || null,
         companyAddress || null,
         lgpdConsent,
-        agency,
         date,
-        apptTime
+        time
       ]);
-      console.log(`Agendamento inserido: ${agency} \xE0s ${apptTime}`);
     }
     await client.query("COMMIT");
-    console.log("Todos os agendamentos confirmados!");
     return {
       statusCode: 200,
       body: JSON.stringify({ success: true, message: "Agendamento confirmado!" })

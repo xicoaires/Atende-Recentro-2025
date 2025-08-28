@@ -47,15 +47,13 @@ function App() {
     setIsLoading(true);
     setError(null);
     console.log('Dados enviados para submit:', formData);
-
     try {
       const response = await submitAppointment(formData);
       console.log('Resposta do submit:', response);
-
-      if (response?.success) {
+      if (response.success) {
         handleNext();
       } else {
-        setError(response?.message || 'Erro de validação');
+        setError(response.message);
       }
     } catch (e) {
       console.error('Erro inesperado no submit:', e);
@@ -80,19 +78,16 @@ function App() {
 
         <main className="mt-8">
           {error && currentStep === 3 && (
-            <div
-              className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-md relative mb-6"
-              role="alert"
-            >
+            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-md relative mb-6" role="alert">
               <strong className="font-bold">Erro!</strong>
               <span className="block sm:inline ml-2">{error}</span>
             </div>
           )}
 
-          {currentStep === 1 && formData && (
+          {currentStep === 1 && (
             <Step1PersonalInfo data={formData} updateData={updateFormData} onNext={handleNext} />
           )}
-          {currentStep === 2 && formData && (
+          {currentStep === 2 && (
             <Step2Scheduling
               data={formData}
               updateData={updateFormData}
@@ -100,7 +95,7 @@ function App() {
               onBack={handleBack}
             />
           )}
-          {currentStep === 3 && formData && (
+          {currentStep === 3 && (
             <Step3Review
               data={formData}
               onBack={handleBack}
@@ -108,9 +103,7 @@ function App() {
               isLoading={isLoading}
             />
           )}
-          {currentStep === 4 && formData && (
-            <Step4Confirmation onReset={handleReset} email={formData.email || ''} />
-          )}
+          {currentStep === 4 && <Step4Confirmation onReset={handleReset} email={formData.email} />}
         </main>
       </div>
     </div>
