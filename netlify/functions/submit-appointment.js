@@ -1,4 +1,5 @@
 import pool from "./db.js";
+import nodemailer from "nodemailer";
 
 // submit-appointment.js
 const { Client } = require("pg");
