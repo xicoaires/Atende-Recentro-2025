@@ -1,35 +1,30 @@
-import { ProfileType } from "./types";
+// Datas disponíveis para agendamento
+export const EVENT_DATES = [
+  "2025-10-07",
+  "2025-10-08",
+];
 
-export const AGENCIES: string[] = [
+// Horários fixos de agendamento
+export const TIME_SLOTS = [
+  "14:00",
+  "15:00",
+  "16:00",
+  "17:00",
+  "18:00",
+];
+
+// Lista de órgãos exibidos para o usuário
+export const AGENCIES = [
   "Secretaria de Finanças (SEFIN)",
   "Instituto do Patrimônio Histórico e Artístico Nacional (IPHAN/PE)",
-  "Procuradoria de Urbanismo e Meio Ambiente (PUMA)",
-  "Secretaria de Desenvolvimento Urbano e Licenciamento (SEPUL)",
-  "Procuradoria Municipal da Fazenda",
-  "Conselho de Arquitetura e Urbanismo de Pernambuco (CAU/PE)",
-  "1º Tabelião de Imóveis do Recife",
-  "Corpo de Bombeiros Militar de Pernambuco (CBMPE)",
-  "Superintendência do Patrimônio da União (SPU)",
+  "Secretaria de Desenvolvimento Urbano (SEDURB)",
+  "Secretaria de Meio Ambiente e Sustentabilidade (SMAS)",
 ];
 
-export const PROFILE_OPTIONS: ProfileType[] = [
-  ProfileType.Investor,
-  ProfileType.Owner,
-  ProfileType.Architect,
-  ProfileType.Engineer,
-];
-
-export const EVENT_DATES: string[] = ["2025-10-07", "2025-10-08"];
-
-export const TIME_SLOTS: string[] = (() => {
-  const slots = [];
-  // Event runs from 14:00 to 19:00
-  for (let h = 14; h < 19; h++) {
-    for (let m = 0; m < 60; m += 15) {
-      const hour = h.toString().padStart(2, '0');
-      const minute = m.toString().padStart(2, '0');
-      slots.push(`${hour}:${minute}`);
-    }
-  }
-  return slots;
-})();
+// Mapeamento entre o nome exibido no front e o código esperado no backend
+export const AGENCIES_MAP: Record<string, string> = {
+  "Secretaria de Finanças (SEFIN)": "SEFIN",
+  "Instituto do Patrimônio Histórico e Artístico Nacional (IPHAN/PE)": "IPHAN",
+  "Secretaria de Desenvolvimento Urbano (SEDURB)": "SEDURB",
+  "Secretaria de Meio Ambiente e Sustentabilidade (SMAS)": "SMAS",
+};

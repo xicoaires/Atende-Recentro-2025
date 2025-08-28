@@ -5,7 +5,6 @@ export enum ProfileType {
   Engineer = "Engenheiro",
 }
 
-// Tipos de fluxo de agendamento disponíveis
 export enum FlowType {
   Complete = "Fluxo completo (todos os órgãos em sequência)",
   Specific = "Fluxo específico (você escolhe os órgãos)",
@@ -22,8 +21,8 @@ export interface AppointmentData {
   role?: string;
   companyAddress?: string;
   lgpdConsent: boolean;
-  flowType: FlowType;       // Define qual fluxo o usuário escolheu
-  agencies: string[];       // Lista de órgãos selecionados (ou todos no caso do Complete)
-  date: string;             // Data escolhida
-  time: string;             // Horário escolhido
+  flowType: FlowType;
+  agencies: string[];
+  date: string;
+  time: string;
 }
