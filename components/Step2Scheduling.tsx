@@ -13,9 +13,11 @@ interface Step2Props {
 const Step2Scheduling: React.FC<Step2Props> = ({ data, updateData, onNext, onBack }) => {
   const [availability, setAvailability] = useState<Record<string, string[]>>({});
   const [loading, setLoading] = useState(false);
+  const [selectAll, setSelectAll] = useState(false);
 
   useEffect(() => {
     const loadAvailability = async () => {
+      if (data.agencies.length === 0) return;
       setLoading(true);
       console.log('Fetching availability for date:', data.date, 'and agencies:', data.agencies);
       try {
@@ -23,7 +25,6 @@ const Step2Scheduling: React.FC<Step2Props> = ({ data, updateData, onNext, onBac
         console.log('Raw response from API:', response);
         if (response.success) {
           setAvailability(response.bookedSlotsByAgency || {});
-          console.log('Parsed response:', response);
         }
       } catch (err) {
         console.error('Error fetching availability:', err);
@@ -32,9 +33,7 @@ const Step2Scheduling: React.FC<Step2Props> = ({ data, updateData, onNext, onBac
       }
     };
 
-    if (data.agencies.length > 0) {
-      loadAvailability();
-    }
+    loadAvailability();
   }, [data.date, data.agencies]);
 
   const handleSelectTime = (agency: string, time: string) => {
@@ -46,26 +45,40 @@ const Step2Scheduling: React.FC<Step2Props> = ({ data, updateData, onNext, onBac
     });
   };
 
+  const handleSelectAllChange = (checked: boolean) => {
+    setSelectAll(checked);
+    updateData({ agencies: checked ? [...AGENCIES] : [] });
+  };
+
+  const handleAgencyChange = (agency: string, checked: boolean) => {
+    const newAgencies = checked
+      ? [...data.agencies, agency]
+      : data.agencies.filter(a => a !== agency);
+    updateData({ agencies: newAgencies });
+    setSelectAll(newAgencies.length === AGENCIES.length);
+  };
+
   return (
     <div className="space-y-6">
       <h2 className="text-xl font-semibold text-gray-700">2. Agendamento</h2>
       
       <div className="p-6 bg-slate-50 rounded-lg border border-slate-200 space-y-4">
         <h3 className="text-lg font-semibold text-gray-800 border-b pb-2">Selecione os órgãos</h3>
+        <div className="flex items-center space-x-2 mt-2">
+          <input
+            type="checkbox"
+            checked={selectAll}
+            onChange={(e) => handleSelectAllChange(e.target.checked)}
+          />
+          <span className="font-medium">Selecionar todos os órgãos</span>
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
           {AGENCIES.map((agency) => (
             <label key={agency} className="flex items-center space-x-2">
               <input
                 type="checkbox"
                 checked={data.agencies.includes(agency)}
-                onChange={(e) => {
-                  const selected = e.target.checked;
-                  updateData({
-                    agencies: selected
-                      ? [...data.agencies, agency]
-                      : data.agencies.filter(a => a !== agency)
-                  });
-                }}
+                onChange={(e) => handleAgencyChange(agency, e.target.checked)}
               />
               <span>{agency}</span>
             </label>
