@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { AppointmentData } from '../types';
-import { AGENCIES } from '../constants';
+import { AGENCIES, TIME_SLOTS } from '../constants';
 import { fetchAvailability } from '../services/schedulingService';
 
 interface Step2Props {
@@ -12,128 +12,104 @@ interface Step2Props {
 
 const Step2Scheduling: React.FC<Step2Props> = ({ data, updateData, onNext, onBack }) => {
   const [availability, setAvailability] = useState<Record<string, string[]>>({});
-  const [selectedAgencies, setSelectedAgencies] = useState<string[]>(data.agencies || []);
-  const [loadingAvailability, setLoadingAvailability] = useState(false);
-
-  const allAgenciesSelected = selectedAgencies.length === AGENCIES.length;
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const loadAvailability = async () => {
-      if (selectedAgencies.length === 0) return;
-
-      console.log('Fetching availability for date:', data.date, 'and agencies:', selectedAgencies);
-      setLoadingAvailability(true);
+      setLoading(true);
+      console.log('Fetching availability for date:', data.date, 'and agencies:', data.agencies);
       try {
-        const response = await fetchAvailability(data.date, selectedAgencies);
+        const response = await fetchAvailability(data.date, data.agencies);
         console.log('Raw response from API:', response);
         if (response.success) {
           setAvailability(response.bookedSlotsByAgency || {});
           console.log('Parsed response:', response);
         }
       } catch (err) {
-        console.error('Erro no fetchAvailability:', err);
+        console.error('Error fetching availability:', err);
       } finally {
-        setLoadingAvailability(false);
+        setLoading(false);
       }
     };
 
-    loadAvailability();
-  }, [data.date, selectedAgencies]);
-
-  const toggleAgency = (agency: string) => {
-    const newSelection = selectedAgencies.includes(agency)
-      ? selectedAgencies.filter(a => a !== agency)
-      : [...selectedAgencies, agency];
-    setSelectedAgencies(newSelection);
-    updateData({ agencies: newSelection });
-  };
-
-  const toggleAllAgencies = () => {
-    if (allAgenciesSelected) {
-      setSelectedAgencies([]);
-      updateData({ agencies: [] });
-    } else {
-      setSelectedAgencies([...AGENCIES]);
-      updateData({ agencies: [...AGENCIES] });
+    if (data.agencies.length > 0) {
+      loadAvailability();
     }
-  };
+  }, [data.date, data.agencies]);
 
-  const handleTimeChange = (agency: string, time: string) => {
+  const handleSelectTime = (agency: string, time: string) => {
     updateData({
-      selectedTimes: { ...data.selectedTimes, [agency]: time },
+      selectedTimes: {
+        ...data.selectedTimes,
+        [agency]: time
+      }
     });
   };
-
-  const isTimeDisabled = (time: string, currentAgency: string) => {
-    // Desabilita se já foi selecionado em outro órgão
-    return Object.entries(data.selectedTimes).some(
-      ([agency, selectedTime]) => agency !== currentAgency && selectedTime === time
-    );
-  };
-
-  const timeSlots = ['09:00', '09:30', '10:00', '10:30', '11:00', '11:30', '14:00', '14:30', '15:00', '15:30', '16:00', '16:30'];
 
   return (
     <div className="space-y-6">
       <h2 className="text-xl font-semibold text-gray-700">2. Agendamento</h2>
-
-      <div className="flex items-center space-x-2">
-        <input type="checkbox" checked={allAgenciesSelected} onChange={toggleAllAgencies} />
-        <label className="font-medium">Selecionar todos os órgãos</label>
+      
+      <div className="p-6 bg-slate-50 rounded-lg border border-slate-200 space-y-4">
+        <h3 className="text-lg font-semibold text-gray-800 border-b pb-2">Selecione os órgãos</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+          {AGENCIES.map((agency) => (
+            <label key={agency} className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                checked={data.agencies.includes(agency)}
+                onChange={(e) => {
+                  const selected = e.target.checked;
+                  updateData({
+                    agencies: selected
+                      ? [...data.agencies, agency]
+                      : data.agencies.filter(a => a !== agency)
+                  });
+                }}
+              />
+              <span>{agency}</span>
+            </label>
+          ))}
+        </div>
       </div>
 
-      {AGENCIES.map(agency => (
-        <div key={agency} className="p-4 bg-slate-50 rounded-lg border border-slate-200">
-          <div className="flex items-center space-x-2">
-            <input
-              type="checkbox"
-              checked={selectedAgencies.includes(agency)}
-              onChange={() => toggleAgency(agency)}
-            />
-            <h3 className="text-lg font-semibold">{agency}</h3>
+      {data.agencies.map((agency) => (
+        <div key={agency} className="p-6 bg-slate-50 rounded-lg border border-slate-200 space-y-2">
+          <h3 className="text-lg font-semibold text-gray-800 border-b pb-2">{agency} - Horários disponíveis</h3>
+          <div className="flex flex-wrap gap-2 mt-2">
+            {TIME_SLOTS.map((slot) => {
+              const isBooked = availability[agency]?.includes(slot);
+              return (
+                <button
+                  key={slot}
+                  disabled={isBooked || loading}
+                  onClick={() => handleSelectTime(agency, slot)}
+                  className={`py-1 px-3 rounded-lg border transition-colors ${
+                    data.selectedTimes[agency] === slot
+                      ? 'bg-green-600 text-white'
+                      : isBooked
+                      ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                      : 'bg-white text-gray-800 hover:bg-green-100'
+                  }`}
+                >
+                  {slot}
+                </button>
+              );
+            })}
           </div>
-
-          {selectedAgencies.includes(agency) && (
-            <div className="mt-2">
-              {loadingAvailability ? (
-                <p>Carregando horários disponíveis...</p>
-              ) : (
-                <div className="grid grid-cols-3 gap-2">
-                  {timeSlots.map(time => {
-                    const isBooked = availability[agency]?.includes(time);
-                    const isDisabled = isBooked || isTimeDisabled(time, agency);
-
-                    return (
-                      <button
-                        key={time}
-                        disabled={isDisabled}
-                        onClick={() => handleTimeChange(agency, time)}
-                        className={`py-2 px-3 rounded-lg border ${
-                          data.selectedTimes[agency] === time
-                            ? 'bg-blue-600 text-white'
-                            : isDisabled
-                            ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                            : 'bg-white hover:bg-gray-100'
-                        }`}
-                      >
-                        {time}
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          )}
         </div>
       ))}
 
-      <div className="flex justify-between mt-8">
-        <button onClick={onBack} className="bg-gray-200 text-gray-800 font-bold py-2 px-6 rounded-lg hover:bg-gray-300 transition-colors">
+      <div className="flex justify-between mt-6">
+        <button
+          onClick={onBack}
+          className="bg-gray-200 text-gray-800 font-bold py-2 px-6 rounded-lg hover:bg-gray-300 transition-colors"
+        >
           Voltar
         </button>
         <button
           onClick={onNext}
-          disabled={selectedAgencies.length === 0 || Object.keys(data.selectedTimes).length !== selectedAgencies.length}
+          disabled={data.agencies.length === 0 || Object.keys(data.selectedTimes).length !== data.agencies.length}
           className="bg-blue-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
         >
           Próximo
