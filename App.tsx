@@ -50,20 +50,12 @@ function App() {
 
     try {
       const response = await submitAppointment(formData);
+      console.log('Resposta do submit:', response);
 
-      // log detalhado para depuração
-      console.log('Resposta do submit (front):', response);
-
-      // verifica se o response tem a propriedade 'success'
-      if (response && typeof response.success !== 'undefined') {
-        if (response.success) {
-          handleNext(); // avança para Step4Confirmation
-        } else {
-          setError(response.message || 'Erro de validação');
-        }
+      if (response?.success) {
+        handleNext();
       } else {
-        setError('Erro inesperado: resposta inválida do servidor');
-        console.error('Resposta inválida do servidor:', response);
+        setError(response?.message || 'Erro de validação');
       }
     } catch (e) {
       console.error('Erro inesperado no submit:', e);
@@ -88,16 +80,37 @@ function App() {
 
         <main className="mt-8">
           {error && currentStep === 3 && (
-            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-md relative mb-6" role="alert">
+            <div
+              className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-md relative mb-6"
+              role="alert"
+            >
               <strong className="font-bold">Erro!</strong>
               <span className="block sm:inline ml-2">{error}</span>
             </div>
           )}
 
-          {currentStep === 1 && <Step1PersonalInfo data={formData} updateData={updateFormData} onNext={handleNext} />}
-          {currentStep === 2 && <Step2Scheduling data={formData} updateData={updateFormData} onNext={handleNext} onBack={handleBack} />}
-          {currentStep === 3 && <Step3Review data={formData} onBack={handleBack} onSubmit={handleSubmit} isLoading={isLoading} />}
-          {currentStep === 4 && <Step4Confirmation onReset={handleReset} email={formData.email} />}
+          {currentStep === 1 && formData && (
+            <Step1PersonalInfo data={formData} updateData={updateFormData} onNext={handleNext} />
+          )}
+          {currentStep === 2 && formData && (
+            <Step2Scheduling
+              data={formData}
+              updateData={updateFormData}
+              onNext={handleNext}
+              onBack={handleBack}
+            />
+          )}
+          {currentStep === 3 && formData && (
+            <Step3Review
+              data={formData}
+              onBack={handleBack}
+              onSubmit={handleSubmit}
+              isLoading={isLoading}
+            />
+          )}
+          {currentStep === 4 && formData && (
+            <Step4Confirmation onReset={handleReset} email={formData.email || ''} />
+          )}
         </main>
       </div>
     </div>
