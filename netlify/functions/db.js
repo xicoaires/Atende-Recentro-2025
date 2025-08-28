@@ -1,10 +1,13 @@
 // db.js
-import pkg from "pg";
-const { Pool } = pkg;
+import pg from "pg";
+
+const { Pool } = pg;
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: process.env.NODE_ENV === "production" ? { rejectUnauthorized: false } : false,
+  ssl: {
+    rejectUnauthorized: false, // importante para conexões em serviços como Heroku/Render
+  },
 });
 
 export default pool;

@@ -1,24 +1,16 @@
+// submit-appointment.js
 import pool from "./db.js";
 import nodemailer from "nodemailer";
-
-// submit-appointment.js
-const { Client } = require("pg");
-const nodemailer = require("nodemailer");
-
-const client = new Client({
-  connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false },
-});
 
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
-    user: process.env.EMAIL_USER, // seu e-mail, ex: atenderecentro@gmail.com
-    pass: process.env.GMAIL_APP_PASSWORD, // senha ou App Password do Gmail
+    user: process.env.EMAIL_USER, // ex: atenderecentro@gmail.com
+    pass: process.env.GMAIL_APP_PASSWORD, // senha de app do Gmail
   },
 });
 
-exports.handler = async (event) => {
+export const handler = async (event) => {
   if (event.httpMethod !== "POST") {
     return { statusCode: 405, body: "Method Not Allowed" };
   }
@@ -36,7 +28,6 @@ exports.handler = async (event) => {
     phone,
     propertyAddress,
     profile,
-    otherProfileDescription,
     query,
     companyName,
     role,
@@ -46,24 +37,14 @@ exports.handler = async (event) => {
     selectedTimes,
   } = data;
 
+  let client;
   try {
-    await client.connect();
+    client = await pool.connect();
 
     const res = await client.query(
-      `INSERT INTO appointments (
-        full_name,
-        email,
-        phone,
-        property_address,
-        profile,
-        query,
-        company_name,
-        role,
-        company_address,
-        lgpd_consent,
-        appt_date,
-        appt_time
-      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING id`,
+      `INSERT INTO appointments 
+        (full_name, email, phone, property_address, profile, query, company_name, role, company_address, lgpd_consent, appt_date, appt_time) 
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING id`,
       [
         fullName,
         email,
@@ -82,7 +63,7 @@ exports.handler = async (event) => {
 
     const appointmentId = res.rows[0].id;
 
-    // Enviar e-mail de confirmação
+    // Envia e-mail de confirmação
     await transporter.sendMail({
       from: process.env.EMAIL_USER,
       to: email,
@@ -106,59 +87,6 @@ Equipe Atende Recentro 2025`,
       body: JSON.stringify({ success: false, message: err.message }),
     };
   } finally {
-    await client.end();
-  }
-};
-
-export const handler = async (event) => {
-  try {
-    const client = await pool.connect(); // pega uma conexão
-    const {
-      fullName,
-      email,
-      phone,
-      propertyAddress,
-      profile,
-      query,
-      companyName,
-      role,
-      companyAddress,
-      lgpdConsent,
-      date,
-      selectedTimes,
-    } = JSON.parse(event.body);
-
-    const result = await client.query(
-      `INSERT INTO appointments 
-        (full_name, email, phone, property_address, profile, query, company_name, role, company_address, lgpd_consent, appt_date, appt_time) 
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING id`,
-      [
-        fullName,
-        email,
-        phone,
-        propertyAddress,
-        profile,
-        query,
-        companyName,
-        role,
-        companyAddress,
-        lgpdConsent,
-        date,
-        selectedTimes.preference,
-      ]
-    );
-
-    client.release(); // devolve ao pool
-
-    return {
-      statusCode: 200,
-      body: JSON.stringify({ success: true, id: result.rows[0].id }),
-    };
-  } catch (err) {
-    console.error("Erro ao processar agendamento:", err);
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ success: false, message: err.message }),
-    };
+    if (client) client.release(); // devolve ao pool
   }
 };
