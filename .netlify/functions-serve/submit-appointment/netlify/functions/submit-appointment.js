@@ -4932,31 +4932,24 @@ var pool = new Pool({
   ssl: { rejectUnauthorized: false }
 });
 var MAX_APPOINTMENTS_PER_SLOT = 11;
-var generateTimeSlots = () => {
-  const slots = [];
-  for (let h = 14; h < 19; h++) {
-    for (let m = 0; m < 60; m += 15) {
-      const hour = h.toString().padStart(2, "0");
-      const minute = m.toString().padStart(2, "0");
-      slots.push(`${hour}:${minute}`);
-    }
-  }
-  return slots;
-};
-var TIME_SLOTS = generateTimeSlots();
 var formatTime = (timeStr) => {
-  if (/^\d{2}:\d{2}:\d{2}$/.test(timeStr)) return timeStr;
   if (/^\d{2}:\d{2}$/.test(timeStr)) return `${timeStr}:00`;
+  if (/^\d{2}:\d{2}:\d{2}$/.test(timeStr)) return timeStr;
   return null;
+};
+var addMinutes = (timeStr, minutesToAdd) => {
+  const [h, m] = timeStr.split(":").map(Number);
+  const totalMinutes = h * 60 + m + minutesToAdd;
+  const newHour = Math.floor(totalMinutes / 60).toString().padStart(2, "0");
+  const newMinute = (totalMinutes % 60).toString().padStart(2, "0");
+  return `${newHour}:${newMinute}:00`;
 };
 exports.handler = async (event) => {
   if (event.httpMethod !== "POST") {
     return { statusCode: 405, body: "Method Not Allowed" };
   }
   try {
-    console.log("Body recebido:", event.body);
     const data = JSON.parse(event.body);
-    console.log("Dados parseados:", data);
     const {
       fullName,
       email,
@@ -4974,41 +4967,31 @@ exports.handler = async (event) => {
       time
     } = data;
     if (!fullName || !email || !propertyAddress || lgpdConsent !== true || !date || !time || !agencies || agencies.length === 0) {
-      return {
-        statusCode: 400,
-        body: JSON.stringify({ success: false, message: "Campos obrigat\xF3rios ausentes ou inv\xE1lidos." })
-      };
+      return { statusCode: 400, body: JSON.stringify({ success: false, message: "Campos obrigat\xF3rios ausentes ou inv\xE1lidos." }) };
     }
     const formattedTime = formatTime(time);
     if (!formattedTime) {
-      return {
-        statusCode: 400,
-        body: JSON.stringify({ success: false, message: "Formato de hor\xE1rio inv\xE1lido." })
-      };
+      return { statusCode: 400, body: JSON.stringify({ success: false, message: "Formato de hor\xE1rio inv\xE1lido." }) };
     }
     const profileArray = Array.isArray(profile) ? profile : profile ? [profile] : [];
     const lgpdBoolean = lgpdConsent === true || lgpdConsent === "true";
     const client = await pool.connect();
     try {
       await client.query("BEGIN");
-      const successfulBookings = [];
-      for (const agency of agencies) {
-        const checkRes = await client.query(
-          `SELECT COUNT(*) as count
-           FROM appointments
-           WHERE appt_date = $1 AND appt_time = $2 AND agency = $3;`,
-          [date, formattedTime, agency]
+      for (let i = 0; i < agencies.length; i++) {
+        const slotTime = addMinutes(formattedTime, i * 15);
+        const res = await client.query(
+          `SELECT COUNT(*) as count FROM appointments WHERE appt_date=$1 AND appt_time=$2 AND agency=$3`,
+          [date, slotTime, agencies[i]]
         );
-        const count = parseInt(checkRes.rows[0].count || "0", 10);
-        if (count < MAX_APPOINTMENTS_PER_SLOT) {
-          successfulBookings.push({ agency, time: formattedTime });
-        } else {
+        const count = parseInt(res.rows[0].count || "0", 10);
+        if (count >= MAX_APPOINTMENTS_PER_SLOT) {
           await client.query("ROLLBACK");
           return {
             statusCode: 409,
             body: JSON.stringify({
               success: false,
-              message: `Conflito de agendamento para ${formattedTime} na ag\xEAncia ${agency}. Tente outro hor\xE1rio.`
+              message: `Hor\xE1rio ${slotTime} indispon\xEDvel para ${agencies[i]}. Escolha outro hor\xE1rio.`
             })
           };
         }
@@ -5018,9 +5001,10 @@ exports.handler = async (event) => {
           full_name, email, phone, property_address, profile, query,
           company_name, role, company_address, lgpd_consent, flow_type,
           agency, appt_date, appt_time
-        ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14);
+        ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
       `;
-      for (const booking of successfulBookings) {
+      for (let i = 0; i < agencies.length; i++) {
+        const slotTime = addMinutes(formattedTime, i * 15);
         await client.query(insertQuery, [
           fullName,
           email,
@@ -5033,36 +5017,24 @@ exports.handler = async (event) => {
           companyAddress || null,
           lgpdBoolean,
           flowType || null,
-          booking.agency,
+          agencies[i],
           date,
-          booking.time
+          slotTime
         ]);
       }
       await client.query("COMMIT");
       return { statusCode: 200, body: JSON.stringify({ success: true, message: "Agendamento confirmado!" }) };
     } catch (dbError) {
-      try {
-        await client.query("ROLLBACK");
-      } catch (e) {
-      }
+      await client.query("ROLLBACK").catch(() => {
+      });
       console.error("Database Error:", dbError);
-      return {
-        statusCode: 500,
-        body: JSON.stringify({
-          success: false,
-          message: "Erro no servidor ao salvar o agendamento.",
-          error: dbError.message
-        })
-      };
+      return { statusCode: 500, body: JSON.stringify({ success: false, message: "Erro ao salvar o agendamento.", error: dbError.message }) };
     } finally {
       client.release();
     }
   } catch (error) {
     console.error("Handler Error:", error);
-    return {
-      statusCode: 400,
-      body: JSON.stringify({ success: false, message: "Requisi\xE7\xE3o mal formatada.", error: error.message })
-    };
+    return { statusCode: 400, body: JSON.stringify({ success: false, message: "Requisi\xE7\xE3o mal formatada.", error: error.message }) };
   }
 };
 //# sourceMappingURL=submit-appointment.js.map

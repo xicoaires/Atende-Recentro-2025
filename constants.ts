@@ -1,15 +1,5 @@
-// src/constants.ts
-import { ProfileType } from './types';
+import { ProfileType } from "./types";
 
-// Opções de perfil para Step1PersonalInfo
-export const PROFILE_OPTIONS = [
-  { label: "Investidor", value: ProfileType.Investor },
-  { label: "Proprietário de Imóvel no Centro", value: ProfileType.Owner },
-  { label: "Arquiteto", value: ProfileType.Architect },
-  { label: "Engenheiro", value: ProfileType.Engineer },
-];
-
-// Órgãos disponíveis para agendamento
 export const AGENCIES: string[] = [
   "Secretaria de Finanças (SEFIN)",
   "Instituto do Patrimônio Histórico e Artístico Nacional (IPHAN/PE)",
@@ -22,15 +12,24 @@ export const AGENCIES: string[] = [
   "Superintendência do Patrimônio da União (SPU)",
 ];
 
-// Datas disponíveis para o evento
-export const EVENT_DATES = [
-  "2025-10-07",
-  "2025-10-08",
+export const PROFILE_OPTIONS: ProfileType[] = [
+  ProfileType.Investor,
+  ProfileType.Owner,
+  ProfileType.Architect,
+  ProfileType.Engineer,
 ];
 
-// Horários disponíveis (14:00 até 18:45, em intervalos de 15 minutos)
-export const TIME_SLOTS = Array.from({ length: (19 - 14) * 4 }, (_, i) => {
-  const hour = 14 + Math.floor(i / 4);
-  const minute = (i % 4) * 15;
-  return `${hour.toString().padStart(2,'0')}:${minute.toString().padStart(2,'0')}`;
-});
+export const EVENT_DATES: string[] = ["2025-10-07", "2025-10-08"];
+
+export const TIME_SLOTS: string[] = (() => {
+  const slots = [];
+  // Event runs from 14:00 to 19:00
+  for (let h = 14; h < 19; h++) {
+    for (let m = 0; m < 60; m += 15) {
+      const hour = h.toString().padStart(2, '0');
+      const minute = m.toString().padStart(2, '0');
+      slots.push(`${hour}:${minute}`);
+    }
+  }
+  return slots;
+})();

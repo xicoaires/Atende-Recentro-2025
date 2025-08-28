@@ -1,7 +1,8 @@
-import React, { useState, useCallback, useEffect } from 'react';
-import { AppointmentData, FlowType } from './types';
+
+import React, { useState, useCallback } from 'react';
+import { AppointmentData, FlowType, ProfileType } from './types';
 import { AGENCIES, EVENT_DATES } from './constants';
-import { submitAppointment, getAvailableSlots } from './services/schedulingService';
+import { submitAppointment } from './services/schedulingService';
 
 import Stepper from './components/Stepper';
 import Step1PersonalInfo from './components/Step1PersonalInfo';
@@ -31,27 +32,10 @@ function App() {
   const [formData, setFormData] = useState<AppointmentData>(initialFormData);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [availableSlots, setAvailableSlots] = useState<Record<string, string[]>>({});
 
   const updateFormData = useCallback((data: Partial<AppointmentData>) => {
     setFormData(prev => ({ ...prev, ...data }));
   }, []);
-
-  // Atualiza horários disponíveis quando a data ou step muda para Step2
-  useEffect(() => {
-    const fetchAvailableSlots = async () => {
-      if (currentStep === 2) {
-        try {
-          const slots = await getAvailableSlots(formData.date, formData.agencies);
-          setAvailableSlots(slots);
-        } catch (e) {
-          console.error(e);
-          setError("Não foi possível carregar horários disponíveis.");
-        }
-      }
-    };
-    fetchAvailableSlots();
-  }, [currentStep, formData.date, formData.agencies]);
 
   const handleNext = () => setCurrentStep(prev => prev + 1);
   const handleBack = () => setCurrentStep(prev => prev - 1);
@@ -59,7 +43,6 @@ function App() {
     setFormData(initialFormData);
     setCurrentStep(1);
     setError(null);
-    setAvailableSlots({});
   };
 
   const handleSubmit = async () => {
@@ -101,7 +84,7 @@ function App() {
           )}
           
           {currentStep === 1 && <Step1PersonalInfo data={formData} updateData={updateFormData} onNext={handleNext} />}
-          {currentStep === 2 && <Step2Scheduling data={formData} updateData={updateFormData} onNext={handleNext} onBack={handleBack} availableSlots={availableSlots} />}
+          {currentStep === 2 && <Step2Scheduling data={formData} updateData={updateFormData} onNext={handleNext} onBack={handleBack} />}
           {currentStep === 3 && <Step3Review data={formData} onBack={handleBack} onSubmit={handleSubmit} isLoading={isLoading} />}
           {currentStep === 4 && <Step4Confirmation onReset={handleReset} email={formData.email} />}
         </main>
