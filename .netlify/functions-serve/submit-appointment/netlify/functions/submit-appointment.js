@@ -3596,7 +3596,7 @@ var require_client = __commonJS({
     var defaults2 = require_defaults();
     var Connection2 = require_connection();
     var crypto = require_utils2();
-    var Client2 = class extends EventEmitter {
+    var Client3 = class extends EventEmitter {
       constructor(config) {
         super();
         this.connectionParameters = new ConnectionParameters(config);
@@ -4105,8 +4105,8 @@ var require_client = __commonJS({
         }
       }
     };
-    Client2.Query = Query2;
-    module2.exports = Client2;
+    Client3.Query = Query2;
+    module2.exports = Client3;
   }
 });
 
@@ -4154,19 +4154,19 @@ var require_pg_pool = __commonJS({
       });
       return { callback: cb, result };
     }
-    function makeIdleListener(pool, client2) {
+    function makeIdleListener(pool2, client2) {
       return function idleListener(err) {
         err.client = client2;
         client2.removeListener("error", idleListener);
         client2.on("error", () => {
-          pool.log("additional client error after disconnection due to error", err);
+          pool2.log("additional client error after disconnection due to error", err);
         });
-        pool._remove(client2);
-        pool.emit("error", err, client2);
+        pool2._remove(client2);
+        pool2.emit("error", err, client2);
       };
     }
-    var Pool2 = class extends EventEmitter {
-      constructor(options, Client2) {
+    var Pool3 = class extends EventEmitter {
+      constructor(options, Client3) {
         super();
         this.options = Object.assign({}, options);
         if (options != null && "password" in options) {
@@ -4189,7 +4189,7 @@ var require_pg_pool = __commonJS({
         this.options.maxLifetimeSeconds = this.options.maxLifetimeSeconds || 0;
         this.log = this.options.log || function() {
         };
-        this.Client = this.options.Client || Client2 || require_lib2().Client;
+        this.Client = this.options.Client || Client3 || require_lib2().Client;
         this.Promise = this.options.Promise || global.Promise;
         if (typeof this.options.idleTimeoutMillis === "undefined") {
           this.options.idleTimeoutMillis = 1e4;
@@ -4497,7 +4497,7 @@ var require_pg_pool = __commonJS({
         return this._clients.length;
       }
     };
-    module2.exports = Pool2;
+    module2.exports = Pool3;
   }
 });
 
@@ -4657,7 +4657,7 @@ var require_client2 = __commonJS({
     var util = require("util");
     var ConnectionParameters = require_connection_parameters();
     var NativeQuery = require_query2();
-    var Client2 = module2.exports = function(config) {
+    var Client3 = module2.exports = function(config) {
       EventEmitter.call(this);
       config = config || {};
       this._Promise = config.Promise || global.Promise;
@@ -4684,9 +4684,9 @@ var require_client2 = __commonJS({
       this.port = cp.port;
       this.namedQueries = {};
     };
-    Client2.Query = NativeQuery;
-    util.inherits(Client2, EventEmitter);
-    Client2.prototype._errorAllQueries = function(err) {
+    Client3.Query = NativeQuery;
+    util.inherits(Client3, EventEmitter);
+    Client3.prototype._errorAllQueries = function(err) {
       const enqueueError = (query) => {
         process.nextTick(() => {
           query.native = this.native;
@@ -4700,7 +4700,7 @@ var require_client2 = __commonJS({
       this._queryQueue.forEach(enqueueError);
       this._queryQueue.length = 0;
     };
-    Client2.prototype._connect = function(cb) {
+    Client3.prototype._connect = function(cb) {
       const self = this;
       if (this._connecting) {
         process.nextTick(() => cb(new Error("Client has already been connected. You cannot reuse a client.")));
@@ -4733,7 +4733,7 @@ var require_client2 = __commonJS({
         });
       });
     };
-    Client2.prototype.connect = function(callback) {
+    Client3.prototype.connect = function(callback) {
       if (callback) {
         this._connect(callback);
         return;
@@ -4748,7 +4748,7 @@ var require_client2 = __commonJS({
         });
       });
     };
-    Client2.prototype.query = function(config, values, callback) {
+    Client3.prototype.query = function(config, values, callback) {
       let query;
       let result;
       let readTimeout;
@@ -4816,7 +4816,7 @@ var require_client2 = __commonJS({
       this._pulseQueryQueue();
       return result;
     };
-    Client2.prototype.end = function(cb) {
+    Client3.prototype.end = function(cb) {
       const self = this;
       this._ending = true;
       if (!this._connected) {
@@ -4837,10 +4837,10 @@ var require_client2 = __commonJS({
       });
       return result;
     };
-    Client2.prototype._hasActiveQuery = function() {
+    Client3.prototype._hasActiveQuery = function() {
       return this._activeQuery && this._activeQuery.state !== "error" && this._activeQuery.state !== "end";
     };
-    Client2.prototype._pulseQueryQueue = function(initialConnection) {
+    Client3.prototype._pulseQueryQueue = function(initialConnection) {
       if (!this._connected) {
         return;
       }
@@ -4861,7 +4861,7 @@ var require_client2 = __commonJS({
         self._pulseQueryQueue();
       });
     };
-    Client2.prototype.cancel = function(query) {
+    Client3.prototype.cancel = function(query) {
       if (this._activeQuery === query) {
         this.native.cancel(function() {
         });
@@ -4869,14 +4869,14 @@ var require_client2 = __commonJS({
         this._queryQueue.splice(this._queryQueue.indexOf(query), 1);
       }
     };
-    Client2.prototype.ref = function() {
+    Client3.prototype.ref = function() {
     };
-    Client2.prototype.unref = function() {
+    Client3.prototype.unref = function() {
     };
-    Client2.prototype.setTypeParser = function(oid, format, parseFn) {
+    Client3.prototype.setTypeParser = function(oid, format, parseFn) {
       return this._types.setTypeParser(oid, format, parseFn);
     };
-    Client2.prototype.getTypeParser = function(oid, format) {
+    Client3.prototype.getTypeParser = function(oid, format) {
       return this._types.getTypeParser(oid, format);
     };
   }
@@ -4894,19 +4894,19 @@ var require_native = __commonJS({
 var require_lib2 = __commonJS({
   "node_modules/pg/lib/index.js"(exports2, module2) {
     "use strict";
-    var Client2 = require_client();
+    var Client3 = require_client();
     var defaults2 = require_defaults();
     var Connection2 = require_connection();
     var Result2 = require_result();
     var utils = require_utils();
-    var Pool2 = require_pg_pool();
+    var Pool3 = require_pg_pool();
     var TypeOverrides2 = require_type_overrides();
     var { DatabaseError: DatabaseError2 } = require_dist();
     var { escapeIdentifier: escapeIdentifier2, escapeLiteral: escapeLiteral2 } = require_utils();
-    var poolFactory = (Client3) => {
-      return class BoundPool extends Pool2 {
+    var poolFactory = (Client4) => {
+      return class BoundPool extends Pool3 {
         constructor(options) {
-          super(options, Client3);
+          super(options, Client4);
         }
       };
     };
@@ -4928,7 +4928,7 @@ var require_lib2 = __commonJS({
     if (typeof process.env.NODE_PG_FORCE_NATIVE !== "undefined") {
       module2.exports = new PG(require_native());
     } else {
-      module2.exports = new PG(Client2);
+      module2.exports = new PG(Client3);
       Object.defineProperty(module2.exports, "native", {
         configurable: true,
         enumerable: false,
@@ -11744,7 +11744,7 @@ var require_mailer = __commonJS({
     var dns = require("dns");
     var crypto = require("crypto");
     var Mail = class extends EventEmitter {
-      constructor(transporter, options, defaults2) {
+      constructor(transporter2, options, defaults2) {
         super();
         this.options = options || {};
         this._defaults = defaults2 || {};
@@ -11758,7 +11758,7 @@ var require_mailer = __commonJS({
         };
         this.meta = /* @__PURE__ */ new Map();
         this.dkim = this.options.dkim ? new DKIM(this.options.dkim) : false;
-        this.transporter = transporter;
+        this.transporter = transporter2;
         this.transporter.mailer = this;
         this.logger = shared.getLogger(this.options, {
           component: this.options.component || "mail"
@@ -13919,10 +13919,10 @@ var require_pool_resource = __commonJS({
     var XOAuth2 = require_xoauth2();
     var EventEmitter = require("events");
     var PoolResource = class extends EventEmitter {
-      constructor(pool) {
+      constructor(pool2) {
         super();
-        this.pool = pool;
-        this.options = pool.options;
+        this.pool = pool2;
+        this.options = pool2.options;
         this.logger = this.pool.logger;
         if (this.options.auth) {
           switch ((this.options.auth.type || "").toString().toUpperCase()) {
@@ -16133,40 +16133,40 @@ var require_nodemailer = __commonJS({
     var ETHEREAL_API_KEY = (process.env.ETHEREAL_API_KEY || "").replace(/\s*/g, "") || null;
     var ETHEREAL_CACHE = ["true", "yes", "y", "1"].includes((process.env.ETHEREAL_CACHE || "yes").toString().trim().toLowerCase());
     var testAccount = false;
-    module2.exports.createTransport = function(transporter, defaults2) {
+    module2.exports.createTransport = function(transporter2, defaults2) {
       let urlConfig;
       let options;
       let mailer;
       if (
         // provided transporter is a configuration object, not transporter plugin
-        typeof transporter === "object" && typeof transporter.send !== "function" || // provided transporter looks like a connection url
-        typeof transporter === "string" && /^(smtps?|direct):/i.test(transporter)
+        typeof transporter2 === "object" && typeof transporter2.send !== "function" || // provided transporter looks like a connection url
+        typeof transporter2 === "string" && /^(smtps?|direct):/i.test(transporter2)
       ) {
-        if (urlConfig = typeof transporter === "string" ? transporter : transporter.url) {
+        if (urlConfig = typeof transporter2 === "string" ? transporter2 : transporter2.url) {
           options = shared.parseConnectionUrl(urlConfig);
         } else {
-          options = transporter;
+          options = transporter2;
         }
         if (options.pool) {
-          transporter = new SMTPPool(options);
+          transporter2 = new SMTPPool(options);
         } else if (options.sendmail) {
-          transporter = new SendmailTransport(options);
+          transporter2 = new SendmailTransport(options);
         } else if (options.streamTransport) {
-          transporter = new StreamTransport(options);
+          transporter2 = new StreamTransport(options);
         } else if (options.jsonTransport) {
-          transporter = new JSONTransport(options);
+          transporter2 = new JSONTransport(options);
         } else if (options.SES) {
           if (options.SES.ses && options.SES.aws) {
             let error = new Error("Using legacy SES configuration, expecting @aws-sdk/client-sesv2, see https://nodemailer.com/transports/ses/");
             error.code = "LegacyConfig";
             throw error;
           }
-          transporter = new SESTransport(options);
+          transporter2 = new SESTransport(options);
         } else {
-          transporter = new SMTPTransport(options);
+          transporter2 = new SMTPTransport(options);
         }
       }
-      mailer = new Mailer(transporter, options, defaults2);
+      mailer = new Mailer(transporter2, options, defaults2);
       return mailer;
     };
     module2.exports.createTestAccount = function(apiUrl, callback) {
@@ -16268,82 +16268,163 @@ var escapeLiteral = import_lib.default.escapeLiteral;
 var Result = import_lib.default.Result;
 var TypeOverrides = import_lib.default.TypeOverrides;
 var defaults = import_lib.default.defaults;
+var esm_default = import_lib.default;
+
+// netlify/functions/db.js
+var { Pool: Pool2 } = esm_default;
+var pool = new Pool2({
+  connectionString: process.env.DATABASE_URL
+});
+var db_default = pool;
 
 // netlify/functions/submit-appointment.js
-var import_nodemailer = __toESM(require_nodemailer(), 1);
-var client = new Client({
+var { Client: Client2 } = require_lib2();
+var nodemailer = require_nodemailer();
+var client = new Client2({
   connectionString: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false }
 });
-async function handler(event, context) {
+var transporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: process.env.EMAIL_USER,
+    // seu e-mail, ex: atenderecentro@gmail.com
+    pass: process.env.GMAIL_APP_PASSWORD
+    // senha ou App Password do Gmail
+  }
+});
+exports.handler = async (event) => {
   if (event.httpMethod !== "POST") {
     return { statusCode: 405, body: "Method Not Allowed" };
   }
+  let data;
   try {
-    const formData = JSON.parse(event.body);
-    console.log("Chamando submitAppointment com dados:", formData);
+    data = JSON.parse(event.body);
+  } catch {
+    return { statusCode: 400, body: "Invalid JSON" };
+  }
+  const {
+    fullName,
+    email,
+    phone,
+    propertyAddress,
+    profile,
+    otherProfileDescription,
+    query,
+    companyName,
+    role,
+    companyAddress,
+    lgpdConsent,
+    date,
+    selectedTimes
+  } = data;
+  try {
     await client.connect();
-    const query = `
-      INSERT INTO appointments
-      (full_name, email, phone, property_address, profile, query, company_name, role, company_address, lgpd_consent, flow_type, agency, appt_date, appt_time)
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
-      RETURNING id
-    `;
-    const values = [
-      formData.fullName,
-      formData.email,
-      formData.phone,
-      formData.propertyAddress,
-      formData.profile,
-      formData.query,
-      formData.companyName,
-      formData.role,
-      formData.companyAddress,
-      formData.lgpdConsent,
-      "recentro",
-      null,
-      // agency não usado
-      formData.date,
-      formData.selectedTimes.preference
-    ];
-    const res = await client.query(query, values);
-    console.log("Agendamento inserido com ID:", res.rows[0].id);
-    const transporter = import_nodemailer.default.createTransport({
-      service: "gmail",
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.GMAIL_APP_PASSWORD
-        // senha de app do Gmail
-      }
-    });
-    const mailOptions = {
-      from: '"Atende Recentro" <atenderecentro@gmail.com>',
-      to: formData.email,
+    const res = await client.query(
+      `INSERT INTO appointments (
+        full_name,
+        email,
+        phone,
+        property_address,
+        profile,
+        query,
+        company_name,
+        role,
+        company_address,
+        lgpd_consent,
+        appt_date,
+        appt_time
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING id`,
+      [
+        fullName,
+        email,
+        phone,
+        propertyAddress,
+        profile,
+        query,
+        companyName,
+        role,
+        companyAddress,
+        lgpdConsent,
+        date,
+        selectedTimes.preference
+      ]
+    );
+    const appointmentId = res.rows[0].id;
+    await transporter.sendMail({
+      from: process.env.EMAIL_USER,
+      to: email,
       subject: "Confirma\xE7\xE3o de Agendamento - Atende Recentro 2025",
-      html: `
-        <p>Ol\xE1 ${formData.fullName},</p>
-        <p>Seu agendamento foi confirmado!</p>
-        <p><strong>Data:</strong> ${formData.date}</p>
-        <p><strong>Hor\xE1rio de prefer\xEAncia:</strong> ${formData.selectedTimes.preference}</p>
-        <p>Em breve, nossa equipe entrar\xE1 em contato com informa\xE7\xF5es adicionais.</p>
-        <p>Atenciosamente,<br/>Equipe Atende Recentro 2025</p>
-      `
-    };
-    await transporter.sendMail(mailOptions);
+      text: `Ol\xE1 ${fullName},
+
+Seu agendamento foi confirmado para o dia ${date} \xE0s ${selectedTimes.preference}.
+
+Obrigado,
+Equipe Atende Recentro 2025`
+    });
     return {
       statusCode: 200,
-      body: JSON.stringify({ success: true, id: res.rows[0].id })
+      body: JSON.stringify({ success: true, id: appointmentId })
     };
-  } catch (error) {
-    console.error("Erro ao processar agendamento:", error);
+  } catch (err) {
+    console.error("Erro ao processar agendamento:", err);
     return {
       statusCode: 500,
-      body: JSON.stringify({ success: false, message: error.message })
+      body: JSON.stringify({ success: false, message: err.message })
     };
   } finally {
     await client.end();
   }
-}
+};
+var handler = async (event) => {
+  try {
+    const client2 = await db_default.connect();
+    const {
+      fullName,
+      email,
+      phone,
+      propertyAddress,
+      profile,
+      query,
+      companyName,
+      role,
+      companyAddress,
+      lgpdConsent,
+      date,
+      selectedTimes
+    } = JSON.parse(event.body);
+    const result = await client2.query(
+      `INSERT INTO appointments 
+        (full_name, email, phone, property_address, profile, query, company_name, role, company_address, lgpd_consent, appt_date, appt_time) 
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING id`,
+      [
+        fullName,
+        email,
+        phone,
+        propertyAddress,
+        profile,
+        query,
+        companyName,
+        role,
+        companyAddress,
+        lgpdConsent,
+        date,
+        selectedTimes.preference
+      ]
+    );
+    client2.release();
+    return {
+      statusCode: 200,
+      body: JSON.stringify({ success: true, id: result.rows[0].id })
+    };
+  } catch (err) {
+    console.error("Erro ao processar agendamento:", err);
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ success: false, message: err.message })
+    };
+  }
+};
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
   handler

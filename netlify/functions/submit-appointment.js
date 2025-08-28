@@ -1,3 +1,5 @@
+import pool from "./db.js";
+
 // submit-appointment.js
 const { Client } = require("pg");
 const nodemailer = require("nodemailer");
@@ -104,5 +106,58 @@ Equipe Atende Recentro 2025`,
     };
   } finally {
     await client.end();
+  }
+};
+
+export const handler = async (event) => {
+  try {
+    const client = await pool.connect(); // pega uma conexão
+    const {
+      fullName,
+      email,
+      phone,
+      propertyAddress,
+      profile,
+      query,
+      companyName,
+      role,
+      companyAddress,
+      lgpdConsent,
+      date,
+      selectedTimes,
+    } = JSON.parse(event.body);
+
+    const result = await client.query(
+      `INSERT INTO appointments 
+        (full_name, email, phone, property_address, profile, query, company_name, role, company_address, lgpd_consent, appt_date, appt_time) 
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING id`,
+      [
+        fullName,
+        email,
+        phone,
+        propertyAddress,
+        profile,
+        query,
+        companyName,
+        role,
+        companyAddress,
+        lgpdConsent,
+        date,
+        selectedTimes.preference,
+      ]
+    );
+
+    client.release(); // devolve ao pool
+
+    return {
+      statusCode: 200,
+      body: JSON.stringify({ success: true, id: result.rows[0].id }),
+    };
+  } catch (err) {
+    console.error("Erro ao processar agendamento:", err);
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ success: false, message: err.message }),
+    };
   }
 };
