@@ -1,86 +1,108 @@
-import { Client } from "pg";
-import nodemailer from "nodemailer";
+// submit-appointment.js
+const { Client } = require("pg");
+const nodemailer = require("nodemailer");
 
 const client = new Client({
   connectionString: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false },
 });
 
-export async function handler(event, context) {
+const transporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: process.env.EMAIL_USER, // seu e-mail, ex: atenderecentro@gmail.com
+    pass: process.env.EMAIL_PASS, // senha ou App Password do Gmail
+  },
+});
+
+exports.handler = async (event) => {
   if (event.httpMethod !== "POST") {
     return { statusCode: 405, body: "Method Not Allowed" };
   }
 
+  let data;
   try {
-    const formData = JSON.parse(event.body);
+    data = JSON.parse(event.body);
+  } catch {
+    return { statusCode: 400, body: "Invalid JSON" };
+  }
 
-    console.log("Chamando submitAppointment com dados:", formData);
+  const {
+    fullName,
+    email,
+    phone,
+    propertyAddress,
+    profile,
+    otherProfileDescription,
+    query,
+    companyName,
+    role,
+    companyAddress,
+    lgpdConsent,
+    date,
+    selectedTimes,
+  } = data;
 
+  try {
     await client.connect();
 
-    const query = `
-      INSERT INTO appointments
-      (full_name, email, phone, property_address, profile, query, company_name, role, company_address, lgpd_consent, flow_type, agency, appt_date, appt_time)
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
-      RETURNING id
-    `;
+    const res = await client.query(
+      `INSERT INTO appointments (
+        full_name,
+        email,
+        phone,
+        property_address,
+        profile,
+        query,
+        company_name,
+        role,
+        company_address,
+        lgpd_consent,
+        appt_date,
+        appt_time
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING id`,
+      [
+        fullName,
+        email,
+        phone,
+        propertyAddress,
+        profile,
+        query,
+        companyName,
+        role,
+        companyAddress,
+        lgpdConsent,
+        date,
+        selectedTimes.preference,
+      ]
+    );
 
-    const values = [
-      formData.fullName,
-      formData.email,
-      formData.phone,
-      formData.propertyAddress,
-      formData.profile,
-      formData.query,
-      formData.companyName,
-      formData.role,
-      formData.companyAddress,
-      formData.lgpdConsent,
-      "recentro",
-      null, // agency não usado
-      formData.date,
-      formData.selectedTimes.preference,
-    ];
+    const appointmentId = res.rows[0].id;
 
-    const res = await client.query(query, values);
-    console.log("Agendamento inserido com ID:", res.rows[0].id);
-
-    // Configura Nodemailer
-    const transporter = nodemailer.createTransport({
-      service: "gmail",
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.GMAIL_APP_PASSWORD, // senha de app do Gmail
-      },
-    });
-
-    const mailOptions = {
-      from: '"Atende Recentro" <atenderecentro@gmail.com>',
-      to: formData.email,
+    // Enviar e-mail de confirmação
+    await transporter.sendMail({
+      from: process.env.EMAIL_USER,
+      to: email,
       subject: "Confirmação de Agendamento - Atende Recentro 2025",
-      html: `
-        <p>Olá ${formData.fullName},</p>
-        <p>Seu agendamento foi confirmado!</p>
-        <p><strong>Data:</strong> ${formData.date}</p>
-        <p><strong>Horário de preferência:</strong> ${formData.selectedTimes.preference}</p>
-        <p>Em breve, nossa equipe entrará em contato com informações adicionais.</p>
-        <p>Atenciosamente,<br/>Equipe Atende Recentro 2025</p>
-      `,
-    };
+      text: `Olá ${fullName},
 
-    await transporter.sendMail(mailOptions);
+Seu agendamento foi confirmado para o dia ${date} às ${selectedTimes.preference}.
+
+Obrigado,
+Equipe Atende Recentro 2025`,
+    });
 
     return {
       statusCode: 200,
-      body: JSON.stringify({ success: true, id: res.rows[0].id }),
+      body: JSON.stringify({ success: true, id: appointmentId }),
     };
-  } catch (error) {
-    console.error("Erro ao processar agendamento:", error);
+  } catch (err) {
+    console.error("Erro ao processar agendamento:", err);
     return {
       statusCode: 500,
-      body: JSON.stringify({ success: false, message: error.message }),
+      body: JSON.stringify({ success: false, message: err.message }),
     };
   } finally {
     await client.end();
   }
-}
+};
