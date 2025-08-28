@@ -1,4 +1,3 @@
-// /netlify/functions/get-available-slots.js
 const { Pool } = require('pg');
 
 const pool = new Pool({
@@ -13,9 +12,7 @@ const TIME_SLOTS = Array.from({ length: (19-14)*4 }, (_, i) => {
 });
 
 exports.handler = async (event) => {
-  if (event.httpMethod !== 'POST') {
-    return { statusCode: 405, body: 'Method Not Allowed' };
-  }
+  if (event.httpMethod !== 'POST') return { statusCode: 405, body: 'Method Not Allowed' };
 
   try {
     const { date, agencies } = JSON.parse(event.body);
@@ -25,25 +22,18 @@ exports.handler = async (event) => {
     }
 
     const client = await pool.connect();
-
     try {
       const unavailable = {};
-
       for (const agency of agencies) {
-        const res = await client.query(
-          `SELECT appt_time FROM appointments WHERE appt_date=$1 AND agency=$2`,
-          [date, agency]
-        );
+        const res = await client.query(`SELECT appt_time FROM appointments WHERE appt_date=$1 AND agency=$2`, [date, agency]);
         unavailable[agency] = res.rows.map(row => row.appt_time);
       }
-
       return { statusCode: 200, body: JSON.stringify(unavailable) };
-
     } finally {
       client.release();
     }
   } catch (err) {
     console.error(err);
-    return { statusCode: 500, body: JSON.stringify({ message: 'Erro interno ao buscar horários' }) };
+    return { statusCode: 500, body: JSON.stringify({ message: 'Erro interno ao buscar horários', error: err.message }) };
   }
 };

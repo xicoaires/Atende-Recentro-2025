@@ -5,6 +5,7 @@ export enum ProfileType {
   Engineer = "Engenheiro",
 }
 
+// Tipos de fluxo de agendamento disponíveis
 export enum FlowType {
   Complete = "Fluxo completo (todos os órgãos em sequência)",
   Specific = "Fluxo específico (você escolhe os órgãos)",
