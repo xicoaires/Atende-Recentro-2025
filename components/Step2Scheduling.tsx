@@ -15,6 +15,7 @@ const Step2Scheduling: React.FC<Step2Props> = ({ data, updateData, onNext, onBac
   const [loading, setLoading] = useState(false);
   const [selectAll, setSelectAll] = useState(false);
 
+  // Carrega disponibilidade do banco
   useEffect(() => {
     const loadAvailability = async () => {
       if (data.agencies.length === 0) return;
@@ -36,6 +37,7 @@ const Step2Scheduling: React.FC<Step2Props> = ({ data, updateData, onNext, onBac
     loadAvailability();
   }, [data.date, data.agencies]);
 
+  // Marca o horário selecionado
   const handleSelectTime = (agency: string, time: string) => {
     updateData({
       selectedTimes: {
@@ -45,23 +47,47 @@ const Step2Scheduling: React.FC<Step2Props> = ({ data, updateData, onNext, onBac
     });
   };
 
+  // Checkbox “Selecionar todos os órgãos”
   const handleSelectAllChange = (checked: boolean) => {
     setSelectAll(checked);
     updateData({ agencies: checked ? [...AGENCIES] : [] });
   };
 
+  // Checkbox individual de órgão
   const handleAgencyChange = (agency: string, checked: boolean) => {
     const newAgencies = checked
       ? [...data.agencies, agency]
       : data.agencies.filter(a => a !== agency);
+
     updateData({ agencies: newAgencies });
     setSelectAll(newAgencies.length === AGENCIES.length);
+
+    // Remove horários selecionados se o órgão for desmarcado
+    if (!checked) {
+      const newSelectedTimes = { ...data.selectedTimes };
+      delete newSelectedTimes[agency];
+      updateData({ selectedTimes: newSelectedTimes });
+    }
+  };
+
+  // Checa se o horário deve estar desabilitado
+  const isSlotDisabled = (agency: string, slot: string) => {
+    // Horário já ocupado no banco
+    const booked = availability[agency]?.includes(slot);
+    if (booked) return true;
+
+    // Horário selecionado para outro órgão
+    for (const [otherAgency, selectedTime] of Object.entries(data.selectedTimes)) {
+      if (otherAgency !== agency && selectedTime === slot) return true;
+    }
+
+    return false;
   };
 
   return (
     <div className="space-y-6">
       <h2 className="text-xl font-semibold text-gray-700">2. Agendamento</h2>
-      
+
       <div className="p-6 bg-slate-50 rounded-lg border border-slate-200 space-y-4">
         <h3 className="text-lg font-semibold text-gray-800 border-b pb-2">Selecione os órgãos</h3>
         <div className="flex items-center space-x-2 mt-2">
@@ -90,25 +116,22 @@ const Step2Scheduling: React.FC<Step2Props> = ({ data, updateData, onNext, onBac
         <div key={agency} className="p-6 bg-slate-50 rounded-lg border border-slate-200 space-y-2">
           <h3 className="text-lg font-semibold text-gray-800 border-b pb-2">{agency} - Horários disponíveis</h3>
           <div className="flex flex-wrap gap-2 mt-2">
-            {TIME_SLOTS.map((slot) => {
-              const isBooked = availability[agency]?.includes(slot);
-              return (
-                <button
-                  key={slot}
-                  disabled={isBooked || loading}
-                  onClick={() => handleSelectTime(agency, slot)}
-                  className={`py-1 px-3 rounded-lg border transition-colors ${
-                    data.selectedTimes[agency] === slot
-                      ? 'bg-green-600 text-white'
-                      : isBooked
-                      ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                      : 'bg-white text-gray-800 hover:bg-green-100'
-                  }`}
-                >
-                  {slot}
-                </button>
-              );
-            })}
+            {TIME_SLOTS.map((slot) => (
+              <button
+                key={slot}
+                disabled={isSlotDisabled(agency, slot) || loading}
+                onClick={() => handleSelectTime(agency, slot)}
+                className={`py-1 px-3 rounded-lg border transition-colors ${
+                  data.selectedTimes[agency] === slot
+                    ? 'bg-green-600 text-white'
+                    : isSlotDisabled(agency, slot)
+                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    : 'bg-white text-gray-800 hover:bg-green-100'
+                }`}
+              >
+                {slot}
+              </button>
+            ))}
           </div>
         </div>
       ))}
@@ -122,7 +145,10 @@ const Step2Scheduling: React.FC<Step2Props> = ({ data, updateData, onNext, onBac
         </button>
         <button
           onClick={onNext}
-          disabled={data.agencies.length === 0 || Object.keys(data.selectedTimes).length !== data.agencies.length}
+          disabled={
+            data.agencies.length === 0 ||
+            Object.keys(data.selectedTimes).length !== data.agencies.length
+          }
           className="bg-blue-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
         >
           Próximo

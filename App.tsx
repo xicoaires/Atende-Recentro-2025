@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { AppointmentData } from './types';
-import { AGENCIES, EVENT_DATES } from './constants';
+import { EVENT_DATES } from './constants';
 import { submitAppointment } from './services/schedulingService';
 
 import Stepper from './components/Stepper';
@@ -26,9 +26,9 @@ const initialFormData: AppointmentData = {
 };
 
 function App() {
-  const [currentStep, setCurrentStep] = useState<number>(1);
+  const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState<AppointmentData>(initialFormData);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const updateFormData = useCallback((data: Partial<AppointmentData>) => {
@@ -50,12 +50,20 @@ function App() {
 
     try {
       const response = await submitAppointment(formData);
-      console.log('Resposta do submit:', response);
 
-      if (response.success) {
-        handleNext();
+      // log detalhado para depuração
+      console.log('Resposta do submit (front):', response);
+
+      // verifica se o response tem a propriedade 'success'
+      if (response && typeof response.success !== 'undefined') {
+        if (response.success) {
+          handleNext(); // avança para Step4Confirmation
+        } else {
+          setError(response.message || 'Erro de validação');
+        }
       } else {
-        setError(response.message || 'Erro de validação');
+        setError('Erro inesperado: resposta inválida do servidor');
+        console.error('Resposta inválida do servidor:', response);
       }
     } catch (e) {
       console.error('Erro inesperado no submit:', e);
@@ -80,34 +88,15 @@ function App() {
 
         <main className="mt-8">
           {error && currentStep === 3 && (
-            <div
-              className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-md relative mb-6"
-              role="alert"
-            >
+            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-md relative mb-6" role="alert">
               <strong className="font-bold">Erro!</strong>
               <span className="block sm:inline ml-2">{error}</span>
             </div>
           )}
 
-          {currentStep === 1 && (
-            <Step1PersonalInfo data={formData} updateData={updateFormData} onNext={handleNext} />
-          )}
-          {currentStep === 2 && (
-            <Step2Scheduling
-              data={formData}
-              updateData={updateFormData}
-              onNext={handleNext}
-              onBack={handleBack}
-            />
-          )}
-          {currentStep === 3 && (
-            <Step3Review
-              data={formData}
-              onBack={handleBack}
-              onSubmit={handleSubmit}
-              isLoading={isLoading}
-            />
-          )}
+          {currentStep === 1 && <Step1PersonalInfo data={formData} updateData={updateFormData} onNext={handleNext} />}
+          {currentStep === 2 && <Step2Scheduling data={formData} updateData={updateFormData} onNext={handleNext} onBack={handleBack} />}
+          {currentStep === 3 && <Step3Review data={formData} onBack={handleBack} onSubmit={handleSubmit} isLoading={isLoading} />}
           {currentStep === 4 && <Step4Confirmation onReset={handleReset} email={formData.email} />}
         </main>
       </div>
