@@ -70,7 +70,7 @@ function App() {
       <div className="bg-white rounded-2xl shadow-xl p-8 max-w-4xl w-full">
         <header className="text-center mb-8">
 
-          <img alt="Logo Atende Recentro 2025" className="mx-auto mb-4 w-80 sm:w-96" src="./src/img/logo.png"/>
+          <img alt="Logo Atende Recentro 2025" className="mx-auto mb-4 w-80 sm:w-96" src="./public/logo.png"/>
           {/* <h1 className="text-3xl font-bold text-gray-800">Atende Recentro 2025</h1> */}
           <h1 className="text-3xl font-bold text-gray-800">Agendamento de Atendimento</h1>
           {/* <p className="text-gray-600 mt-2">Agendamento de Atendimento</p> */}
