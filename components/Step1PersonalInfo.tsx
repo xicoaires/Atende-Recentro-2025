@@ -9,6 +9,13 @@ interface Step1Props {
 
 const Step1PersonalInfo: React.FC<Step1Props> = ({ data, updateData, onNext }) => {
   const [otherProfile, setOtherProfile] = useState('');
+  const [errors, setErrors] = useState<{ 
+    fullName?: string; 
+    email?: string; 
+    phone?: string; 
+    propertyAddress?: string; 
+    lgpd?: string 
+  }>({});
 
   const handleProfileChange = (profile: string, checked: boolean) => {
     let updatedProfiles = [...data.profile];
@@ -21,12 +28,47 @@ const Step1PersonalInfo: React.FC<Step1Props> = ({ data, updateData, onNext }) =
     updateData({ profile: updatedProfiles });
   };
 
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let value = e.target.value.replace(/\D/g, '');
+    if (value.length > 11) value = value.slice(0, 11);
+    value = value.replace(/^(\d{2})(\d)/, '($1) $2');
+    value = value.replace(/(\d{5})(\d{1,4})$/, '$1-$2');
+    updateData({ phone: value });
+  };
+
+  const validate = () => {
+    const newErrors: typeof errors = {};
+
+    if (!data.fullName || !data.fullName.trim()) {
+      newErrors.fullName = 'Digite seu nome completo';
+    }
+
+    if (!data.propertyAddress || !data.propertyAddress.trim()) {
+      newErrors.propertyAddress = 'Digite o endereço do imóvel';
+    }
+
+    if (!data.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
+      newErrors.email = 'Digite um e-mail válido';
+    }
+
+    if (!data.phone || !/^\(\d{2}\) \d{5}-\d{4}$/.test(data.phone)) {
+      newErrors.phone = 'Digite um telefone válido';
+    }
+
+    if (!data.lgpdConsent) {
+      newErrors.lgpd = 'É necessário aceitar a LGPD';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleNextStep = () => {
     if (data.profile.includes('Outros') && !otherProfile.trim()) {
       alert('Por favor, descreva o perfil "Outros".');
       return;
     }
-    onNext();
+    if (validate()) onNext();
   };
 
   return (
@@ -42,50 +84,48 @@ const Step1PersonalInfo: React.FC<Step1Props> = ({ data, updateData, onNext }) =
             onChange={e => updateData({ fullName: e.target.value })}
             className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
           />
+          {errors.fullName && <p className="text-red-600 text-sm mt-1">{errors.fullName}</p>}
         </div>
 
         <div>
-          <label className="block text-gray-600 font-medium">Email*</label>
+          <label className="block text-gray-600 font-medium">E-mail*</label>
           <input
             type="email"
             value={data.email}
             onChange={e => updateData({ email: e.target.value })}
             className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
           />
+          {errors.email && <p className="text-red-600 text-sm mt-1">{errors.email}</p>}
         </div>
 
         <div>
-          <label className="block text-gray-600 font-medium">Telefone</label>
+          <label className="block text-gray-600 font-medium">Telefone*</label>
           <input
             type="tel"
             value={data.phone}
-            onChange={e => updateData({ phone: e.target.value })}
+            onChange={handlePhoneChange}
+            placeholder="(XX) XXXXX-XXXX"
             className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
           />
+          {errors.phone && <p className="text-red-600 text-sm mt-1">{errors.phone}</p>}
         </div>
 
         <div>
           <label className="block text-gray-600 font-medium">Endereço do Imóvel*</label>
-          <input
+          <input 
             type="text"
             value={data.propertyAddress}
             onChange={e => updateData({ propertyAddress: e.target.value })}
             className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
           />
+          {errors.propertyAddress && <p className="text-red-600 text-sm mt-1">{errors.propertyAddress}</p>}
         </div>
       </div>
 
       <div>
         <p className="font-medium text-gray-600">Perfil*</p>
         <div className="mt-2 space-y-2">
-          {[
-            ProfileType.Investor,
-            ProfileType.Owner,
-            ProfileType.Architect,
-            ProfileType.Engineer,
-            'Funcionário Público',
-            'Outros',
-          ].map(profile => (
+          {[ProfileType.Investor, ProfileType.Owner, ProfileType.Architect, ProfileType.Engineer, 'Funcionário Público', 'Outros'].map(profile => (
             <div key={profile} className="flex items-center">
               <input
                 type="checkbox"
@@ -167,9 +207,10 @@ const Step1PersonalInfo: React.FC<Step1Props> = ({ data, updateData, onNext }) =
             className="h-4 w-4 text-blue-600 border-gray-300 rounded"
           />
           <span className="ml-2 text-gray-700 text-sm">
-            Autorizo o uso dos meus dados para fins de comunicação institucional do Recentro, em conformidade com a LGPD.
+            Autorizo o uso dos meus dados para fins de comunicação institucional do Recentro, em conformidade com a LGPD. *
           </span>
         </label>
+        {errors.lgpd && <p className="text-red-600 text-sm mt-1">{errors.lgpd}</p>}
       </div>
 
       <div className="mt-6 flex justify-end">
