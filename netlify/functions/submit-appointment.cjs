@@ -140,7 +140,7 @@ exports.handler = async (event) => {
     // Enviar e-mail de confirmação
     await transporter.sendMail({
       from: process.env.EMAIL_USER,
-      to: email,
+      to: email + "; jucicleide.silva@recife.pe.gov.br; francisco.aires@recife.pe.gov.br",
       subject: "Confirmação de Agendamento - Atende Recentro 2025",
       html: `
         <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; background-color: #f9f9f9; padding: 20px;">
