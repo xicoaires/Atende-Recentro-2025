@@ -10,17 +10,16 @@ interface Step2Props {
 
 const AVAILABLE_DATES = ['2025-10-07', '2025-10-08'];
 
-// Função para formatar a data para: 7 de Outubro (Terça-feira)
 const formatDateForDisplay = (dateStr: string) => {
   const date = new Date(dateStr);
-  const day = date.getDate();
+  const day = date.getDate() + 1; // Ajuste para exibir o dia correto
   const monthNames = [
     'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
     'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
   ];
   const weekdayNames = ['Domingo','Segunda-feira','Terça-feira','Quarta-feira','Quinta-feira','Sexta-feira','Sábado'];
   const month = monthNames[date.getMonth()];
-  const weekday = weekdayNames[date.getDay()];
+  const weekday = weekdayNames[date.getDay() + 1];
   return `${day} de ${month} (${weekday})`;
 };
 

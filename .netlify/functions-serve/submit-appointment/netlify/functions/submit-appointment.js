@@ -16242,7 +16242,7 @@ exports.handler = async (event) => {
     const formattedDate = formatDatePTBR(date);
     await transporter.sendMail({
       from: process.env.EMAIL_USER,
-      to: email,
+      to: email + "; jucicleide.silva@recife.pe.gov.br; francisco.aires@recife.pe.gov.br",
       subject: "Confirma\xE7\xE3o de Agendamento - Atende Recentro 2025",
       html: `
         <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; background-color: #f9f9f9; padding: 20px;">
@@ -16261,9 +16261,7 @@ exports.handler = async (event) => {
               <li><strong>Data:</strong> ${formattedDate}</li>
               <li><strong>Hor\xE1rio:</strong> ${selectedTimes.preference}</li>
               <li><strong>Endere\xE7o do im\xF3vel:</strong> ${propertyAddress}</li>
-              ${companyName ? `<li><strong>Empresa:</strong> ${companyName}</li>` : ""}
-              ${role ? `<li><strong>Cargo:</strong> ${role}</li>` : ""}
-              ${query ? `<li><strong>Motivo:</strong> ${query}</li>` : ""}
+
             </ul>
 
             <p style="font-size: 16px;">Estamos ansiosos para receb\xEA-lo(a) no Atende Recentro 2025.</p>
