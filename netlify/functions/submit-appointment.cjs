@@ -1,4 +1,4 @@
-import pool from "./db.js"; // importa o pool corretamente
+import pool from "./db.cjs"; // importa o pool corretamente
 import nodemailer from "nodemailer";
 
 const transporter = nodemailer.createTransport({
