@@ -1,11 +1,6 @@
 // submit-appointment.cjs
-const { Client } = require("pg");
+const pool = require("./db.cjs");
 const nodemailer = require("nodemailer");
-
-const client = new Client({
-  connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false },
-});
 
 const transporter = nodemailer.createTransport({
   service: "gmail",
@@ -43,7 +38,7 @@ exports.handler = async (event) => {
   } = data;
 
   try {
-    await client.connect();
+    const client = await pool.connect(); // pega conexão do pool
 
     const res = await client.query(
       `INSERT INTO appointments 
@@ -65,8 +60,11 @@ exports.handler = async (event) => {
       ]
     );
 
+    client.release(); // devolve ao pool
+
     const appointmentId = res.rows[0].id;
 
+    // Enviar e-mail
     await transporter.sendMail({
       from: process.env.EMAIL_USER,
       to: email,
@@ -76,9 +74,7 @@ exports.handler = async (event) => {
 
     return { statusCode: 200, body: JSON.stringify({ success: true, id: appointmentId }) };
   } catch (err) {
-    console.error(err);
+    console.error("Erro ao processar agendamento:", err);
     return { statusCode: 500, body: JSON.stringify({ success: false, message: err.message }) };
-  } finally {
-    await client.end();
   }
 };
