@@ -46,10 +46,10 @@ function App() {
   const handleSubmit = async () => {
     setIsLoading(true);
     setError(null);
-    console.log('Dados enviados para submit:', formData); // log detalhado
+    // console.log('Dados enviados para submit:', formData); // log detalhado
     try {
       const response = await submitAppointment(formData);
-      console.log('Resposta do submit:', response); // log detalhado
+      // console.log('Resposta do submit:', response); // log detalhado
       if (response.success) {
         handleNext();
       } else {
@@ -69,9 +69,13 @@ function App() {
     <div className="min-h-screen flex flex-col items-center justify-center p-4 font-sans">
       <div className="bg-white rounded-2xl shadow-xl p-8 max-w-4xl w-full">
         <header className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-800">📌 Atende Recentro 2025</h1>
-          <p className="text-gray-600 mt-2">Agendamento de Atendimento</p>
-          <p className="text-sm text-gray-500">7 e 8 de Outubro de 2025 | Complexo Niágara S.A</p>
+
+          <img alt="Logo Atende Recentro 2025" className="mx-auto mb-4 w-80 sm:w-96" src="./src/img/logo.png"/>
+          {/* <h1 className="text-3xl font-bold text-gray-800">Atende Recentro 2025</h1> */}
+          <h1 className="text-3xl font-bold text-gray-800">Agendamento de Atendimento</h1>
+          {/* <p className="text-gray-600 mt-2">Agendamento de Atendimento</p> */}
+          <p className="text-sm text-gray-500">Complexo Niágara S.A. | Av. Rio Branco, 162 - Recife</p>
+          {/* <p className="text-sm text-gray-500">7 e 8 de Outubro de 2025</p> */}
         </header>
         
         <Stepper steps={steps} currentStep={currentStep} />

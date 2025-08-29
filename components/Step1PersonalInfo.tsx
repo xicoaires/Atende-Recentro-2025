@@ -17,6 +17,8 @@ const Step1PersonalInfo: React.FC<Step1Props> = ({ data, updateData, onNext }) =
     lgpd?: string 
   }>({});
 
+  const inputClass = "mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-1 focus:ring-blue-400 focus:border-blue-400 transition-colors";
+
   const handleProfileChange = (profile: string, checked: boolean) => {
     let updatedProfiles = [...data.profile];
     if (checked) {
@@ -82,7 +84,7 @@ const Step1PersonalInfo: React.FC<Step1Props> = ({ data, updateData, onNext }) =
             type="text"
             value={data.fullName}
             onChange={e => updateData({ fullName: e.target.value })}
-            className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+            className={inputClass}
           />
           {errors.fullName && <p className="text-red-600 text-sm mt-1">{errors.fullName}</p>}
         </div>
@@ -93,7 +95,7 @@ const Step1PersonalInfo: React.FC<Step1Props> = ({ data, updateData, onNext }) =
             type="email"
             value={data.email}
             onChange={e => updateData({ email: e.target.value })}
-            className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+            className={inputClass}
           />
           {errors.email && <p className="text-red-600 text-sm mt-1">{errors.email}</p>}
         </div>
@@ -105,7 +107,7 @@ const Step1PersonalInfo: React.FC<Step1Props> = ({ data, updateData, onNext }) =
             value={data.phone}
             onChange={handlePhoneChange}
             placeholder="(XX) XXXXX-XXXX"
-            className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+            className={inputClass}
           />
           {errors.phone && <p className="text-red-600 text-sm mt-1">{errors.phone}</p>}
         </div>
@@ -116,7 +118,7 @@ const Step1PersonalInfo: React.FC<Step1Props> = ({ data, updateData, onNext }) =
             type="text"
             value={data.propertyAddress}
             onChange={e => updateData({ propertyAddress: e.target.value })}
-            className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+            className={inputClass}
           />
           {errors.propertyAddress && <p className="text-red-600 text-sm mt-1">{errors.propertyAddress}</p>}
         </div>
@@ -146,7 +148,7 @@ const Step1PersonalInfo: React.FC<Step1Props> = ({ data, updateData, onNext }) =
                 setOtherProfile(e.target.value);
                 updateData({ profile: [...data.profile.filter(p => p !== 'Outros'), `Outros: ${e.target.value}`] });
               }}
-              className="mt-2 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+              className={inputClass}
             />
           )}
         </div>
@@ -157,7 +159,7 @@ const Step1PersonalInfo: React.FC<Step1Props> = ({ data, updateData, onNext }) =
         <textarea
           value={data.query}
           onChange={e => updateData({ query: e.target.value })}
-          className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+          className={inputClass}
           rows={4}
         />
         <p className="text-gray-500 text-sm mt-1">
@@ -174,7 +176,7 @@ const Step1PersonalInfo: React.FC<Step1Props> = ({ data, updateData, onNext }) =
               type="text"
               value={data.companyName || ''}
               onChange={e => updateData({ companyName: e.target.value })}
-              className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+              className={inputClass}
             />
           </div>
           <div>
@@ -183,7 +185,7 @@ const Step1PersonalInfo: React.FC<Step1Props> = ({ data, updateData, onNext }) =
               type="text"
               value={data.role || ''}
               onChange={e => updateData({ role: e.target.value })}
-              className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+              className={inputClass}
             />
           </div>
           <div className="md:col-span-2">
@@ -192,7 +194,7 @@ const Step1PersonalInfo: React.FC<Step1Props> = ({ data, updateData, onNext }) =
               type="text"
               value={data.companyAddress || ''}
               onChange={e => updateData({ companyAddress: e.target.value })}
-              className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+              className={inputClass}
             />
           </div>
         </div>
