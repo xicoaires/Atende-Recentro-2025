@@ -159,9 +159,7 @@ exports.handler = async (event) => {
               <li><strong>Data:</strong> ${formattedDate}</li>
               <li><strong>Horário:</strong> ${selectedTimes.preference}</li>
               <li><strong>Endereço do imóvel:</strong> ${propertyAddress}</li>
-              ${companyName ? `<li><strong>Empresa:</strong> ${companyName}</li>` : ''}
-              ${role ? `<li><strong>Cargo:</strong> ${role}</li>` : ''}
-              ${query ? `<li><strong>Motivo:</strong> ${query}</li>` : ''}
+
             </ul>
 
             <p style="font-size: 16px;">Estamos ansiosos para recebê-lo(a) no Atende Recentro 2025.</p>
