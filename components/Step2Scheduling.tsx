@@ -11,6 +11,20 @@ interface Step2Props {
 const AVAILABLE_DATES = ['2025-10-07', '2025-10-08'];
 const AVAILABLE_TIMES = ['14:00', '15:00', '16:00', '17:00', '18:00'];
 
+// Função para formatar a data para: 7 de Outubro (Terça-feira)
+const formatDateForDisplay = (dateStr: string) => {
+  const date = new Date(dateStr);
+  const day = date.getDate();
+  const monthNames = [
+    'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+    'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+  ];
+  const weekdayNames = ['Domingo','Segunda-feira','Terça-feira','Quarta-feira','Quinta-feira','Sexta-feira','Sábado'];
+  const month = monthNames[date.getMonth()];
+  const weekday = weekdayNames[date.getDay() + 1];
+  return `${day + 1}  de ${month} (${weekday})`;
+};
+
 const Step2Scheduling: React.FC<Step2Props> = ({ data, updateData, onNext, onBack }) => {
   return (
     <div className="space-y-8">
@@ -30,7 +44,7 @@ const Step2Scheduling: React.FC<Step2Props> = ({ data, updateData, onNext, onBac
                   : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
               }`}
             >
-              {date.split('-').reverse().join('/')}
+              {formatDateForDisplay(date)}
             </button>
           ))}
         </div>

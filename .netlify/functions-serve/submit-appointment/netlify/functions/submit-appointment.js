@@ -1,33 +1,7 @@
-var __create = Object.create;
-var __defProp = Object.defineProperty;
-var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
 var __getOwnPropNames = Object.getOwnPropertyNames;
-var __getProtoOf = Object.getPrototypeOf;
-var __hasOwnProp = Object.prototype.hasOwnProperty;
 var __commonJS = (cb, mod) => function __require() {
   return mod || (0, cb[__getOwnPropNames(cb)[0]])((mod = { exports: {} }).exports, mod), mod.exports;
 };
-var __export = (target, all) => {
-  for (var name in all)
-    __defProp(target, name, { get: all[name], enumerable: true });
-};
-var __copyProps = (to, from, except, desc) => {
-  if (from && typeof from === "object" || typeof from === "function") {
-    for (let key of __getOwnPropNames(from))
-      if (!__hasOwnProp.call(to, key) && key !== except)
-        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
-  }
-  return to;
-};
-var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
-  // If the importer is in node compatibility mode or this is not an ESM
-  // file that has been converted to a CommonJS file using a Babel-
-  // compatible transform (i.e. "__esModule" has not been set), then set
-  // "default" to the CommonJS "module.exports" for node compatibility.
-  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
-  mod
-));
-var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
 // node_modules/postgres-array/index.js
 var require_postgres_array = __commonJS({
@@ -1026,7 +1000,7 @@ var require_defaults = __commonJS({
 var require_utils = __commonJS({
   "node_modules/pg/lib/utils.js"(exports2, module2) {
     "use strict";
-    var defaults2 = require_defaults();
+    var defaults = require_defaults();
     var util = require("util");
     var { isDate } = util.types || util;
     function escapeElement(elementRepresentation) {
@@ -1077,7 +1051,7 @@ var require_utils = __commonJS({
           return buf.slice(val.byteOffset, val.byteOffset + val.byteLength);
         }
         if (isDate(val)) {
-          if (defaults2.parseInputDatesAsUTC) {
+          if (defaults.parseInputDatesAsUTC) {
             return dateToStringUTC(val);
           } else {
             return dateToString(val);
@@ -1140,10 +1114,10 @@ var require_utils = __commonJS({
       }
       return config;
     }
-    var escapeIdentifier2 = function(str) {
+    var escapeIdentifier = function(str) {
       return '"' + str.replace(/"/g, '""') + '"';
     };
-    var escapeLiteral2 = function(str) {
+    var escapeLiteral = function(str) {
       let hasBackslash = false;
       let escaped = "'";
       if (str == null) {
@@ -1174,8 +1148,8 @@ var require_utils = __commonJS({
         return prepareValue(value);
       },
       normalizeQueryConfig,
-      escapeIdentifier: escapeIdentifier2,
-      escapeLiteral: escapeLiteral2
+      escapeIdentifier,
+      escapeLiteral
     };
   }
 });
@@ -1566,13 +1540,13 @@ var require_sasl = __commonJS({
 var require_type_overrides = __commonJS({
   "node_modules/pg/lib/type-overrides.js"(exports2, module2) {
     "use strict";
-    var types2 = require_pg_types();
-    function TypeOverrides2(userTypes) {
-      this._types = userTypes || types2;
+    var types = require_pg_types();
+    function TypeOverrides(userTypes) {
+      this._types = userTypes || types;
       this.text = {};
       this.binary = {};
     }
-    TypeOverrides2.prototype.getOverrides = function(format) {
+    TypeOverrides.prototype.getOverrides = function(format) {
       switch (format) {
         case "text":
           return this.text;
@@ -1582,18 +1556,18 @@ var require_type_overrides = __commonJS({
           return {};
       }
     };
-    TypeOverrides2.prototype.setTypeParser = function(oid, format, parseFn) {
+    TypeOverrides.prototype.setTypeParser = function(oid, format, parseFn) {
       if (typeof format === "function") {
         parseFn = format;
         format = "text";
       }
       this.getOverrides(format)[oid] = parseFn;
     };
-    TypeOverrides2.prototype.getTypeParser = function(oid, format) {
+    TypeOverrides.prototype.getTypeParser = function(oid, format) {
       format = format || "text";
       return this.getOverrides(format)[oid] || this._types.getTypeParser(oid, format);
     };
-    module2.exports = TypeOverrides2;
+    module2.exports = TypeOverrides;
   }
 });
 
@@ -1770,7 +1744,7 @@ var require_connection_parameters = __commonJS({
   "node_modules/pg/lib/connection-parameters.js"(exports2, module2) {
     "use strict";
     var dns = require("dns");
-    var defaults2 = require_defaults();
+    var defaults = require_defaults();
     var parse = require_pg_connection_string().parse;
     var val = function(key, config, envVar) {
       if (envVar === void 0) {
@@ -1779,7 +1753,7 @@ var require_connection_parameters = __commonJS({
       } else {
         envVar = process.env[envVar];
       }
-      return config[key] || envVar || defaults2[key];
+      return config[key] || envVar || defaults[key];
     };
     var readSSLConfigFromEnvironment = function() {
       switch (process.env.PGSSLMODE) {
@@ -1793,7 +1767,7 @@ var require_connection_parameters = __commonJS({
         case "no-verify":
           return { rejectUnauthorized: false };
       }
-      return defaults2.ssl;
+      return defaults.ssl;
     };
     var quoteParamValue = function(value) {
       return "'" + ("" + value).replace(/\\/g, "\\\\").replace(/'/g, "\\'") + "'";
@@ -1907,17 +1881,17 @@ var require_connection_parameters = __commonJS({
 var require_result = __commonJS({
   "node_modules/pg/lib/result.js"(exports2, module2) {
     "use strict";
-    var types2 = require_pg_types();
+    var types = require_pg_types();
     var matchRegexp = /^([A-Za-z]+)(?: (\d+))?(?: (\d+))?/;
-    var Result2 = class {
-      constructor(rowMode, types3) {
+    var Result = class {
+      constructor(rowMode, types2) {
         this.command = null;
         this.rowCount = null;
         this.oid = null;
         this.rows = [];
         this.fields = [];
         this._parsers = void 0;
-        this._types = types3;
+        this._types = types2;
         this.RowCtor = null;
         this.rowAsArray = rowMode === "array";
         if (this.rowAsArray) {
@@ -1984,13 +1958,13 @@ var require_result = __commonJS({
           if (this._types) {
             this._parsers[i] = this._types.getTypeParser(desc.dataTypeID, desc.format || "text");
           } else {
-            this._parsers[i] = types2.getTypeParser(desc.dataTypeID, desc.format || "text");
+            this._parsers[i] = types.getTypeParser(desc.dataTypeID, desc.format || "text");
           }
         }
         this._prebuiltEmptyResultObject = { ...row };
       }
     };
-    module2.exports = Result2;
+    module2.exports = Result;
   }
 });
 
@@ -1999,9 +1973,9 @@ var require_query = __commonJS({
   "node_modules/pg/lib/query.js"(exports2, module2) {
     "use strict";
     var { EventEmitter } = require("events");
-    var Result2 = require_result();
+    var Result = require_result();
     var utils = require_utils();
-    var Query2 = class extends EventEmitter {
+    var Query = class extends EventEmitter {
       constructor(config, values, callback) {
         super();
         config = utils.normalizeQueryConfig(config, values, callback);
@@ -2018,7 +1992,7 @@ var require_query = __commonJS({
         if (process.domain && config.callback) {
           this.callback = process.domain.bind(config.callback);
         }
-        this._result = new Result2(this._rowMode, this.types);
+        this._result = new Result(this._rowMode, this.types);
         this._results = this._result;
         this._canceledDueToError = false;
       }
@@ -2045,7 +2019,7 @@ var require_query = __commonJS({
           if (!Array.isArray(this._results)) {
             this._results = [this._result];
           }
-          this._result = new Result2(this._rowMode, this._result._types);
+          this._result = new Result(this._rowMode, this._result._types);
           this._results.push(this._result);
         }
       }
@@ -2187,7 +2161,7 @@ var require_query = __commonJS({
       handleCopyData(msg, connection) {
       }
     };
-    module2.exports = Query2;
+    module2.exports = Query;
   }
 });
 
@@ -2229,14 +2203,14 @@ var require_messages = __commonJS({
       name: "copyDone",
       length: 4
     };
-    var DatabaseError2 = class extends Error {
+    var DatabaseError = class extends Error {
       constructor(message, length, name) {
         super(message);
         this.length = length;
         this.name = name;
       }
     };
-    exports2.DatabaseError = DatabaseError2;
+    exports2.DatabaseError = DatabaseError;
     var CopyDataMessage = class {
       constructor(length, chunk) {
         this.length = length;
@@ -2494,11 +2468,11 @@ var require_serializer = __commonJS({
         console.error("You supplied %s (%s)", name, name.length);
         console.error("This can cause conflicts and silent errors executing queries");
       }
-      const types2 = query2.types || emptyArray;
-      const len = types2.length;
+      const types = query2.types || emptyArray;
+      const len = types.length;
       const buffer = writer.addCString(name).addCString(query2.text).addInt16(len);
       for (let i = 0; i < len; i++) {
-        buffer.addInt32(types2[i]);
+        buffer.addInt32(types[i]);
       }
       return writer.flush(
         80
@@ -3116,7 +3090,7 @@ var require_connection = __commonJS({
     var flushBuffer = serialize.flush();
     var syncBuffer = serialize.sync();
     var endBuffer = serialize.end();
-    var Connection2 = class extends EventEmitter {
+    var Connection = class extends EventEmitter {
       constructor(config) {
         super();
         config = config || {};
@@ -3286,7 +3260,7 @@ var require_connection = __commonJS({
         this._send(serialize.copyFail(msg));
       }
     };
-    module2.exports = Connection2;
+    module2.exports = Connection;
   }
 });
 
@@ -3590,13 +3564,13 @@ var require_client = __commonJS({
     var EventEmitter = require("events").EventEmitter;
     var utils = require_utils();
     var sasl = require_sasl();
-    var TypeOverrides2 = require_type_overrides();
+    var TypeOverrides = require_type_overrides();
     var ConnectionParameters = require_connection_parameters();
-    var Query2 = require_query();
-    var defaults2 = require_defaults();
-    var Connection2 = require_connection();
+    var Query = require_query();
+    var defaults = require_defaults();
+    var Connection = require_connection();
     var crypto = require_utils2();
-    var Client3 = class extends EventEmitter {
+    var Client = class extends EventEmitter {
       constructor(config) {
         super();
         this.connectionParameters = new ConnectionParameters(config);
@@ -3613,7 +3587,7 @@ var require_client = __commonJS({
         this.replication = this.connectionParameters.replication;
         const c = config || {};
         this._Promise = c.Promise || global.Promise;
-        this._types = new TypeOverrides2(c.types);
+        this._types = new TypeOverrides(c.types);
         this._ending = false;
         this._ended = false;
         this._connecting = false;
@@ -3621,7 +3595,7 @@ var require_client = __commonJS({
         this._connectionError = false;
         this._queryable = true;
         this.enableChannelBinding = Boolean(c.enableChannelBinding);
-        this.connection = c.connection || new Connection2({
+        this.connection = c.connection || new Connection({
           stream: c.stream,
           ssl: this.connectionParameters.ssl,
           keepAlive: c.keepAlive || false,
@@ -3629,7 +3603,7 @@ var require_client = __commonJS({
           encoding: this.connectionParameters.client_encoding || "utf8"
         });
         this.queryQueue = [];
-        this.binary = c.binary || defaults2.binary;
+        this.binary = c.binary || defaults.binary;
         this.processID = null;
         this.secretKey = null;
         this.ssl = this.connectionParameters.ssl || false;
@@ -3957,8 +3931,8 @@ var require_client = __commonJS({
         }
         return data;
       }
-      cancel(client2, query) {
-        if (client2.activeQuery === query) {
+      cancel(client, query) {
+        if (client.activeQuery === query) {
           const con = this.connection;
           if (this.host && this.host.indexOf("/") === 0) {
             con.connect(this.host + "/.s.PGSQL." + this.port);
@@ -3966,10 +3940,10 @@ var require_client = __commonJS({
             con.connect(this.port, this.host);
           }
           con.on("connect", function() {
-            con.cancel(client2.processID, client2.secretKey);
+            con.cancel(client.processID, client.secretKey);
           });
-        } else if (client2.queryQueue.indexOf(query) !== -1) {
-          client2.queryQueue.splice(client2.queryQueue.indexOf(query), 1);
+        } else if (client.queryQueue.indexOf(query) !== -1) {
+          client.queryQueue.splice(client.queryQueue.indexOf(query), 1);
         }
       }
       setTypeParser(oid, format, parseFn) {
@@ -4023,7 +3997,7 @@ var require_client = __commonJS({
           }
         } else {
           readTimeout = config.query_timeout || this.connectionParameters.query_timeout;
-          query = new Query2(config, values, callback);
+          query = new Query(config, values, callback);
           if (!query.callback) {
             result = new this._Promise((resolve, reject) => {
               query.callback = (err, res) => err ? reject(err) : resolve(res);
@@ -4105,8 +4079,8 @@ var require_client = __commonJS({
         }
       }
     };
-    Client3.Query = Query2;
-    module2.exports = Client3;
+    Client.Query = Query;
+    module2.exports = Client;
   }
 });
 
@@ -4122,8 +4096,8 @@ var require_pg_pool = __commonJS({
       return i === -1 ? void 0 : list.splice(i, 1)[0];
     };
     var IdleItem = class {
-      constructor(client2, idleListener, timeoutId) {
-        this.client = client2;
+      constructor(client, idleListener, timeoutId) {
+        this.client = client;
         this.idleListener = idleListener;
         this.timeoutId = timeoutId;
       }
@@ -4142,8 +4116,8 @@ var require_pg_pool = __commonJS({
       }
       let rej;
       let res;
-      const cb = function(err, client2) {
-        err ? rej(err) : res(client2);
+      const cb = function(err, client) {
+        err ? rej(err) : res(client);
       };
       const result = new Promise2(function(resolve, reject) {
         res = resolve;
@@ -4154,19 +4128,19 @@ var require_pg_pool = __commonJS({
       });
       return { callback: cb, result };
     }
-    function makeIdleListener(pool2, client2) {
+    function makeIdleListener(pool2, client) {
       return function idleListener(err) {
-        err.client = client2;
-        client2.removeListener("error", idleListener);
-        client2.on("error", () => {
+        err.client = client;
+        client.removeListener("error", idleListener);
+        client.on("error", () => {
           pool2.log("additional client error after disconnection due to error", err);
         });
-        pool2._remove(client2);
-        pool2.emit("error", err, client2);
+        pool2._remove(client);
+        pool2.emit("error", err, client);
       };
     }
-    var Pool3 = class extends EventEmitter {
-      constructor(options, Client3) {
+    var Pool = class extends EventEmitter {
+      constructor(options, Client) {
         super();
         this.options = Object.assign({}, options);
         if (options != null && "password" in options) {
@@ -4189,7 +4163,7 @@ var require_pg_pool = __commonJS({
         this.options.maxLifetimeSeconds = this.options.maxLifetimeSeconds || 0;
         this.log = this.options.log || function() {
         };
-        this.Client = this.options.Client || Client3 || require_lib2().Client;
+        this.Client = this.options.Client || Client || require_lib2().Client;
         this.Promise = this.options.Promise || global.Promise;
         if (typeof this.options.idleTimeoutMillis === "undefined") {
           this.options.idleTimeoutMillis = 1e4;
@@ -4238,25 +4212,25 @@ var require_pg_pool = __commonJS({
         if (this._idle.length) {
           const idleItem = this._idle.pop();
           clearTimeout(idleItem.timeoutId);
-          const client2 = idleItem.client;
-          client2.ref && client2.ref();
+          const client = idleItem.client;
+          client.ref && client.ref();
           const idleListener = idleItem.idleListener;
-          return this._acquireClient(client2, pendingItem, idleListener, false);
+          return this._acquireClient(client, pendingItem, idleListener, false);
         }
         if (!this._isFull()) {
           return this.newClient(pendingItem);
         }
         throw new Error("unexpected condition");
       }
-      _remove(client2, callback) {
-        const removed = removeWhere(this._idle, (item) => item.client === client2);
+      _remove(client, callback) {
+        const removed = removeWhere(this._idle, (item) => item.client === client);
         if (removed !== void 0) {
           clearTimeout(removed.timeoutId);
         }
-        this._clients = this._clients.filter((c) => c !== client2);
+        this._clients = this._clients.filter((c) => c !== client);
         const context = this;
-        client2.end(() => {
-          context.emit("remove", client2);
+        client.end(() => {
+          context.emit("remove", client);
           if (typeof callback === "function") {
             callback();
           }
@@ -4297,9 +4271,9 @@ var require_pg_pool = __commonJS({
         return result;
       }
       newClient(pendingItem) {
-        const client2 = new this.Client(this.options);
-        this._clients.push(client2);
-        const idleListener = makeIdleListener(this, client2);
+        const client = new this.Client(this.options);
+        this._clients.push(client);
+        const idleListener = makeIdleListener(this, client);
         this.log("checking client timeout");
         let tid;
         let timeoutHit = false;
@@ -4307,18 +4281,18 @@ var require_pg_pool = __commonJS({
           tid = setTimeout(() => {
             this.log("ending client due to timeout");
             timeoutHit = true;
-            client2.connection ? client2.connection.stream.destroy() : client2.end();
+            client.connection ? client.connection.stream.destroy() : client.end();
           }, this.options.connectionTimeoutMillis);
         }
         this.log("connecting new client");
-        client2.connect((err) => {
+        client.connect((err) => {
           if (tid) {
             clearTimeout(tid);
           }
-          client2.on("error", idleListener);
+          client.on("error", idleListener);
           if (err) {
             this.log("client failed to connect", err);
-            this._clients = this._clients.filter((c) => c !== client2);
+            this._clients = this._clients.filter((c) => c !== client);
             if (timeoutHit) {
               err = new Error("Connection terminated due to connection timeout", { cause: err });
             }
@@ -4331,95 +4305,95 @@ var require_pg_pool = __commonJS({
             if (this.options.maxLifetimeSeconds !== 0) {
               const maxLifetimeTimeout = setTimeout(() => {
                 this.log("ending client due to expired lifetime");
-                this._expired.add(client2);
-                const idleIndex = this._idle.findIndex((idleItem) => idleItem.client === client2);
+                this._expired.add(client);
+                const idleIndex = this._idle.findIndex((idleItem) => idleItem.client === client);
                 if (idleIndex !== -1) {
                   this._acquireClient(
-                    client2,
-                    new PendingItem((err2, client3, clientRelease) => clientRelease()),
+                    client,
+                    new PendingItem((err2, client2, clientRelease) => clientRelease()),
                     idleListener,
                     false
                   );
                 }
               }, this.options.maxLifetimeSeconds * 1e3);
               maxLifetimeTimeout.unref();
-              client2.once("end", () => clearTimeout(maxLifetimeTimeout));
+              client.once("end", () => clearTimeout(maxLifetimeTimeout));
             }
-            return this._acquireClient(client2, pendingItem, idleListener, true);
+            return this._acquireClient(client, pendingItem, idleListener, true);
           }
         });
       }
       // acquire a client for a pending work item
-      _acquireClient(client2, pendingItem, idleListener, isNew) {
+      _acquireClient(client, pendingItem, idleListener, isNew) {
         if (isNew) {
-          this.emit("connect", client2);
+          this.emit("connect", client);
         }
-        this.emit("acquire", client2);
-        client2.release = this._releaseOnce(client2, idleListener);
-        client2.removeListener("error", idleListener);
+        this.emit("acquire", client);
+        client.release = this._releaseOnce(client, idleListener);
+        client.removeListener("error", idleListener);
         if (!pendingItem.timedOut) {
           if (isNew && this.options.verify) {
-            this.options.verify(client2, (err) => {
+            this.options.verify(client, (err) => {
               if (err) {
-                client2.release(err);
+                client.release(err);
                 return pendingItem.callback(err, void 0, NOOP);
               }
-              pendingItem.callback(void 0, client2, client2.release);
+              pendingItem.callback(void 0, client, client.release);
             });
           } else {
-            pendingItem.callback(void 0, client2, client2.release);
+            pendingItem.callback(void 0, client, client.release);
           }
         } else {
           if (isNew && this.options.verify) {
-            this.options.verify(client2, client2.release);
+            this.options.verify(client, client.release);
           } else {
-            client2.release();
+            client.release();
           }
         }
       }
       // returns a function that wraps _release and throws if called more than once
-      _releaseOnce(client2, idleListener) {
+      _releaseOnce(client, idleListener) {
         let released = false;
         return (err) => {
           if (released) {
             throwOnDoubleRelease();
           }
           released = true;
-          this._release(client2, idleListener, err);
+          this._release(client, idleListener, err);
         };
       }
       // release a client back to the poll, include an error
       // to remove it from the pool
-      _release(client2, idleListener, err) {
-        client2.on("error", idleListener);
-        client2._poolUseCount = (client2._poolUseCount || 0) + 1;
-        this.emit("release", err, client2);
-        if (err || this.ending || !client2._queryable || client2._ending || client2._poolUseCount >= this.options.maxUses) {
-          if (client2._poolUseCount >= this.options.maxUses) {
+      _release(client, idleListener, err) {
+        client.on("error", idleListener);
+        client._poolUseCount = (client._poolUseCount || 0) + 1;
+        this.emit("release", err, client);
+        if (err || this.ending || !client._queryable || client._ending || client._poolUseCount >= this.options.maxUses) {
+          if (client._poolUseCount >= this.options.maxUses) {
             this.log("remove expended client");
           }
-          return this._remove(client2, this._pulseQueue.bind(this));
+          return this._remove(client, this._pulseQueue.bind(this));
         }
-        const isExpired = this._expired.has(client2);
+        const isExpired = this._expired.has(client);
         if (isExpired) {
           this.log("remove expired client");
-          this._expired.delete(client2);
-          return this._remove(client2, this._pulseQueue.bind(this));
+          this._expired.delete(client);
+          return this._remove(client, this._pulseQueue.bind(this));
         }
         let tid;
         if (this.options.idleTimeoutMillis && this._isAboveMin()) {
           tid = setTimeout(() => {
             this.log("remove idle client");
-            this._remove(client2, this._pulseQueue.bind(this));
+            this._remove(client, this._pulseQueue.bind(this));
           }, this.options.idleTimeoutMillis);
           if (this.options.allowExitOnIdle) {
             tid.unref();
           }
         }
         if (this.options.allowExitOnIdle) {
-          client2.unref();
+          client.unref();
         }
-        this._idle.push(new IdleItem(client2, idleListener, tid));
+        this._idle.push(new IdleItem(client, idleListener, tid));
         this._pulseQueue();
       }
       query(text, values, cb) {
@@ -4436,7 +4410,7 @@ var require_pg_pool = __commonJS({
         }
         const response = promisify(this.Promise, cb);
         cb = response.callback;
-        this.connect((err, client2) => {
+        this.connect((err, client) => {
           if (err) {
             return cb(err);
           }
@@ -4446,27 +4420,27 @@ var require_pg_pool = __commonJS({
               return;
             }
             clientReleased = true;
-            client2.release(err2);
+            client.release(err2);
             cb(err2);
           };
-          client2.once("error", onError);
+          client.once("error", onError);
           this.log("dispatching query");
           try {
-            client2.query(text, values, (err2, res) => {
+            client.query(text, values, (err2, res) => {
               this.log("query dispatched");
-              client2.removeListener("error", onError);
+              client.removeListener("error", onError);
               if (clientReleased) {
                 return;
               }
               clientReleased = true;
-              client2.release(err2);
+              client.release(err2);
               if (err2) {
                 return cb(err2);
               }
               return cb(void 0, res);
             });
           } catch (err2) {
-            client2.release(err2);
+            client.release(err2);
             return cb(err2);
           }
         });
@@ -4491,13 +4465,13 @@ var require_pg_pool = __commonJS({
         return this._idle.length;
       }
       get expiredCount() {
-        return this._clients.reduce((acc, client2) => acc + (this._expired.has(client2) ? 1 : 0), 0);
+        return this._clients.reduce((acc, client) => acc + (this._expired.has(client) ? 1 : 0), 0);
       }
       get totalCount() {
         return this._clients.length;
       }
     };
-    module2.exports = Pool3;
+    module2.exports = Pool;
   }
 });
 
@@ -4572,13 +4546,13 @@ var require_query2 = __commonJS({
       );
       return this._promise;
     };
-    NativeQuery.prototype.submit = function(client2) {
+    NativeQuery.prototype.submit = function(client) {
       this.state = "running";
       const self = this;
-      this.native = client2.native;
-      client2.native.arrayMode = this._arrayMode;
+      this.native = client.native;
+      client.native.arrayMode = this._arrayMode;
       let after = function(err, rows, results) {
-        client2.native.arrayMode = false;
+        client.native.arrayMode = false;
         setImmediate(function() {
           self.emit("_done");
         });
@@ -4614,16 +4588,16 @@ var require_query2 = __commonJS({
           console.error("This can cause conflicts and silent errors executing queries");
         }
         const values = (this.values || []).map(utils.prepareValue);
-        if (client2.namedQueries[this.name]) {
-          if (this.text && client2.namedQueries[this.name] !== this.text) {
+        if (client.namedQueries[this.name]) {
+          if (this.text && client.namedQueries[this.name] !== this.text) {
             const err = new Error(`Prepared statements must be unique - '${this.name}' was used for a different statement`);
             return after(err);
           }
-          return client2.native.execute(this.name, values, after);
+          return client.native.execute(this.name, values, after);
         }
-        return client2.native.prepare(this.name, this.text, values.length, function(err) {
+        return client.native.prepare(this.name, this.text, values.length, function(err) {
           if (err) return after(err);
-          client2.namedQueries[self.name] = self.text;
+          client.namedQueries[self.name] = self.text;
           return self.native.execute(self.name, values, after);
         });
       } else if (this.values) {
@@ -4632,11 +4606,11 @@ var require_query2 = __commonJS({
           return after(err);
         }
         const vals = this.values.map(utils.prepareValue);
-        client2.native.query(this.text, vals, after);
+        client.native.query(this.text, vals, after);
       } else if (this.queryMode === "extended") {
-        client2.native.query(this.text, [], after);
+        client.native.query(this.text, [], after);
       } else {
-        client2.native.query(this.text, after);
+        client.native.query(this.text, after);
       }
     };
   }
@@ -4652,16 +4626,16 @@ var require_client2 = __commonJS({
     } catch (e) {
       throw e;
     }
-    var TypeOverrides2 = require_type_overrides();
+    var TypeOverrides = require_type_overrides();
     var EventEmitter = require("events").EventEmitter;
     var util = require("util");
     var ConnectionParameters = require_connection_parameters();
     var NativeQuery = require_query2();
-    var Client3 = module2.exports = function(config) {
+    var Client = module2.exports = function(config) {
       EventEmitter.call(this);
       config = config || {};
       this._Promise = config.Promise || global.Promise;
-      this._types = new TypeOverrides2(config.types);
+      this._types = new TypeOverrides(config.types);
       this.native = new Native({
         types: this._types
       });
@@ -4684,9 +4658,9 @@ var require_client2 = __commonJS({
       this.port = cp.port;
       this.namedQueries = {};
     };
-    Client3.Query = NativeQuery;
-    util.inherits(Client3, EventEmitter);
-    Client3.prototype._errorAllQueries = function(err) {
+    Client.Query = NativeQuery;
+    util.inherits(Client, EventEmitter);
+    Client.prototype._errorAllQueries = function(err) {
       const enqueueError = (query) => {
         process.nextTick(() => {
           query.native = this.native;
@@ -4700,7 +4674,7 @@ var require_client2 = __commonJS({
       this._queryQueue.forEach(enqueueError);
       this._queryQueue.length = 0;
     };
-    Client3.prototype._connect = function(cb) {
+    Client.prototype._connect = function(cb) {
       const self = this;
       if (this._connecting) {
         process.nextTick(() => cb(new Error("Client has already been connected. You cannot reuse a client.")));
@@ -4733,7 +4707,7 @@ var require_client2 = __commonJS({
         });
       });
     };
-    Client3.prototype.connect = function(callback) {
+    Client.prototype.connect = function(callback) {
       if (callback) {
         this._connect(callback);
         return;
@@ -4748,7 +4722,7 @@ var require_client2 = __commonJS({
         });
       });
     };
-    Client3.prototype.query = function(config, values, callback) {
+    Client.prototype.query = function(config, values, callback) {
       let query;
       let result;
       let readTimeout;
@@ -4816,7 +4790,7 @@ var require_client2 = __commonJS({
       this._pulseQueryQueue();
       return result;
     };
-    Client3.prototype.end = function(cb) {
+    Client.prototype.end = function(cb) {
       const self = this;
       this._ending = true;
       if (!this._connected) {
@@ -4837,10 +4811,10 @@ var require_client2 = __commonJS({
       });
       return result;
     };
-    Client3.prototype._hasActiveQuery = function() {
+    Client.prototype._hasActiveQuery = function() {
       return this._activeQuery && this._activeQuery.state !== "error" && this._activeQuery.state !== "end";
     };
-    Client3.prototype._pulseQueryQueue = function(initialConnection) {
+    Client.prototype._pulseQueryQueue = function(initialConnection) {
       if (!this._connected) {
         return;
       }
@@ -4861,7 +4835,7 @@ var require_client2 = __commonJS({
         self._pulseQueryQueue();
       });
     };
-    Client3.prototype.cancel = function(query) {
+    Client.prototype.cancel = function(query) {
       if (this._activeQuery === query) {
         this.native.cancel(function() {
         });
@@ -4869,14 +4843,14 @@ var require_client2 = __commonJS({
         this._queryQueue.splice(this._queryQueue.indexOf(query), 1);
       }
     };
-    Client3.prototype.ref = function() {
+    Client.prototype.ref = function() {
     };
-    Client3.prototype.unref = function() {
+    Client.prototype.unref = function() {
     };
-    Client3.prototype.setTypeParser = function(oid, format, parseFn) {
+    Client.prototype.setTypeParser = function(oid, format, parseFn) {
       return this._types.setTypeParser(oid, format, parseFn);
     };
-    Client3.prototype.getTypeParser = function(oid, format) {
+    Client.prototype.getTypeParser = function(oid, format) {
       return this._types.getTypeParser(oid, format);
     };
   }
@@ -4894,41 +4868,41 @@ var require_native = __commonJS({
 var require_lib2 = __commonJS({
   "node_modules/pg/lib/index.js"(exports2, module2) {
     "use strict";
-    var Client3 = require_client();
-    var defaults2 = require_defaults();
-    var Connection2 = require_connection();
-    var Result2 = require_result();
+    var Client = require_client();
+    var defaults = require_defaults();
+    var Connection = require_connection();
+    var Result = require_result();
     var utils = require_utils();
-    var Pool3 = require_pg_pool();
-    var TypeOverrides2 = require_type_overrides();
-    var { DatabaseError: DatabaseError2 } = require_dist();
-    var { escapeIdentifier: escapeIdentifier2, escapeLiteral: escapeLiteral2 } = require_utils();
-    var poolFactory = (Client4) => {
-      return class BoundPool extends Pool3 {
+    var Pool = require_pg_pool();
+    var TypeOverrides = require_type_overrides();
+    var { DatabaseError } = require_dist();
+    var { escapeIdentifier, escapeLiteral } = require_utils();
+    var poolFactory = (Client2) => {
+      return class BoundPool extends Pool {
         constructor(options) {
-          super(options, Client4);
+          super(options, Client2);
         }
       };
     };
     var PG = function(clientConstructor) {
-      this.defaults = defaults2;
+      this.defaults = defaults;
       this.Client = clientConstructor;
       this.Query = this.Client.Query;
       this.Pool = poolFactory(this.Client);
       this._pools = [];
-      this.Connection = Connection2;
+      this.Connection = Connection;
       this.types = require_pg_types();
-      this.DatabaseError = DatabaseError2;
-      this.TypeOverrides = TypeOverrides2;
-      this.escapeIdentifier = escapeIdentifier2;
-      this.escapeLiteral = escapeLiteral2;
-      this.Result = Result2;
+      this.DatabaseError = DatabaseError;
+      this.TypeOverrides = TypeOverrides;
+      this.escapeIdentifier = escapeIdentifier;
+      this.escapeLiteral = escapeLiteral;
+      this.Result = Result;
       this.utils = utils;
     };
     if (typeof process.env.NODE_PG_FORCE_NATIVE !== "undefined") {
       module2.exports = new PG(require_native());
     } else {
-      module2.exports = new PG(Client3);
+      module2.exports = new PG(Client);
       Object.defineProperty(module2.exports, "native", {
         configurable: true,
         enumerable: false,
@@ -4948,6 +4922,18 @@ var require_lib2 = __commonJS({
         }
       });
     }
+  }
+});
+
+// netlify/functions/db.cjs
+var require_db = __commonJS({
+  "netlify/functions/db.cjs"(exports2, module2) {
+    var { Pool } = require_lib2();
+    var pool2 = new Pool({
+      connectionString: process.env.DATABASE_URL,
+      ssl: { rejectUnauthorized: false }
+    });
+    module2.exports = pool2;
   }
 });
 
@@ -5168,7 +5154,7 @@ var require_package = __commonJS({
   "node_modules/nodemailer/package.json"(exports2, module2) {
     module2.exports = {
       name: "nodemailer",
-      version: "7.0.5",
+      version: "6.10.1",
       description: "Easy as cake e-mail sending from your Node.js applications",
       main: "lib/nodemailer.js",
       scripts: {
@@ -5191,19 +5177,19 @@ var require_package = __commonJS({
       },
       homepage: "https://nodemailer.com/",
       devDependencies: {
-        "@aws-sdk/client-sesv2": "3.839.0",
+        "@aws-sdk/client-ses": "3.731.1",
         bunyan: "1.8.15",
         c8: "10.1.3",
         eslint: "8.57.0",
         "eslint-config-nodemailer": "1.2.0",
         "eslint-config-prettier": "9.1.0",
         libbase64: "1.3.0",
-        libmime: "5.3.7",
+        libmime: "5.3.6",
         libqp: "2.1.1",
         "nodemailer-ntlm-auth": "1.0.4",
         proxy: "1.0.2",
         "proxy-test-server": "1.0.0",
-        "smtp-server": "3.14.0"
+        "smtp-server": "3.13.6"
       },
       engines: {
         node: ">=6.0.0"
@@ -5247,7 +5233,7 @@ var require_fetch = __commonJS({
       let finished = false;
       let cookies;
       let body;
-      let handler2 = parsed.protocol === "https:" ? https : http;
+      let handler = parsed.protocol === "https:" ? https : http;
       let headers = {
         "accept-encoding": "gzip,deflate",
         "user-agent": "nodemailer/" + packageData.version
@@ -5328,7 +5314,7 @@ var require_fetch = __commonJS({
         reqOptions.servername = parsed.hostname;
       }
       try {
-        req = handler2.request(reqOptions);
+        req = handler.request(reqOptions);
       } catch (E) {
         finished = true;
         setImmediate(() => {
@@ -5721,11 +5707,11 @@ var require_shared = __commonJS({
       });
       return options;
     };
-    module2.exports._logFunc = (logger, level, defaults2, data, message, ...args) => {
+    module2.exports._logFunc = (logger, level, defaults, data, message, ...args) => {
       let entry = {};
-      Object.keys(defaults2 || {}).forEach((key) => {
+      Object.keys(defaults || {}).forEach((key) => {
         if (key !== "level") {
-          entry[key] = defaults2[key];
+          entry[key] = defaults[key];
         }
       });
       Object.keys(data || {}).forEach((key) => {
@@ -5735,7 +5721,7 @@ var require_shared = __commonJS({
       });
       logger[level](entry, message, ...args);
     };
-    module2.exports.getLogger = (options, defaults2) => {
+    module2.exports.getLogger = (options, defaults) => {
       options = options || {};
       let response = {};
       let levels = ["trace", "debug", "info", "warn", "error", "fatal"];
@@ -5751,7 +5737,7 @@ var require_shared = __commonJS({
       }
       levels.forEach((level) => {
         response[level] = (data, message, ...args) => {
-          module2.exports._logFunc(logger, level, defaults2, data, message, ...args);
+          module2.exports._logFunc(logger, level, defaults, data, message, ...args);
         };
       });
       return response;
@@ -10460,25 +10446,17 @@ var require_mail_composer = __commonJS({
         let icalEvent, eventObject;
         let attachments = [].concat(this.mail.attachments || []).map((attachment, i) => {
           let data;
+          let isMessageNode = /^message\//i.test(attachment.contentType);
           if (/^data:/i.test(attachment.path || attachment.href)) {
             attachment = this._processDataUrl(attachment);
           }
           let contentType = attachment.contentType || mimeFuncs.detectMimeType(attachment.filename || attachment.path || attachment.href || "bin");
           let isImage = /^image\//i.test(contentType);
-          let isMessageNode = /^message\//i.test(contentType);
           let contentDisposition = attachment.contentDisposition || (isMessageNode || isImage && attachment.cid ? "inline" : "attachment");
-          let contentTransferEncoding;
-          if ("contentTransferEncoding" in attachment) {
-            contentTransferEncoding = attachment.contentTransferEncoding;
-          } else if (isMessageNode) {
-            contentTransferEncoding = "7bit";
-          } else {
-            contentTransferEncoding = "base64";
-          }
           data = {
             contentType,
             contentDisposition,
-            contentTransferEncoding
+            contentTransferEncoding: "contentTransferEncoding" in attachment ? attachment.contentTransferEncoding : "base64"
           };
           if (attachment.filename) {
             data.filename = attachment.filename;
@@ -11175,7 +11153,7 @@ var require_dkim = __commonJS({
     var path = require("path");
     var crypto = require("crypto");
     var DKIM_ALGO = "sha256";
-    var MAX_MESSAGE_SIZE = 2 * 1024 * 1024;
+    var MAX_MESSAGE_SIZE = 128 * 1024;
     var DKIMSigner = class {
       constructor(options, keys, input, output) {
         this.options = options || {};
@@ -11476,18 +11454,18 @@ var require_mail_message = __commonJS({
         this.message = null;
         data = data || {};
         let options = mailer.options || {};
-        let defaults2 = mailer._defaults || {};
+        let defaults = mailer._defaults || {};
         Object.keys(data).forEach((key) => {
           this.data[key] = data[key];
         });
         this.data.headers = this.data.headers || {};
-        Object.keys(defaults2).forEach((key) => {
+        Object.keys(defaults).forEach((key) => {
           if (!(key in this.data)) {
-            this.data[key] = defaults2[key];
+            this.data[key] = defaults[key];
           } else if (key === "headers") {
-            Object.keys(defaults2.headers).forEach((key2) => {
+            Object.keys(defaults.headers).forEach((key2) => {
               if (!(key2 in this.data.headers)) {
-                this.data.headers[key2] = defaults2.headers[key2];
+                this.data.headers[key2] = defaults.headers[key2];
               }
             });
           }
@@ -11744,10 +11722,10 @@ var require_mailer = __commonJS({
     var dns = require("dns");
     var crypto = require("crypto");
     var Mail = class extends EventEmitter {
-      constructor(transporter2, options, defaults2) {
+      constructor(transporter2, options, defaults) {
         super();
         this.options = options || {};
-        this._defaults = defaults2 || {};
+        this._defaults = defaults || {};
         this._defaultPlugins = {
           compile: [(...args) => this._convertDataImages(...args)],
           stream: []
@@ -11794,9 +11772,6 @@ var require_mailer = __commonJS({
           });
           this.transporter.on("idle", (...args) => {
             this.emit("idle", ...args);
-          });
-          this.transporter.on("clear", (...args) => {
-            this.emit("clear", ...args);
           });
         }
         ["close", "isIdle", "verify"].forEach((method) => {
@@ -12481,7 +12456,7 @@ var require_smtp_connection = __commonJS({
           }
         }
         if (this.customAuth.has(this._authMethod)) {
-          let handler2 = this.customAuth.get(this._authMethod);
+          let handler = this.customAuth.get(this._authMethod);
           let lastResponse;
           let returned = false;
           let resolve = () => {
@@ -12509,7 +12484,7 @@ var require_smtp_connection = __commonJS({
             returned = true;
             callback(this._formatError(err, "EAUTH", lastResponse, "AUTH " + this._authMethod));
           };
-          let handlerResponse = handler2({
+          let handlerResponse = handler({
             auth: this._auth,
             method: this._authMethod,
             extensions: [].concat(this._supportedExtensions),
@@ -14136,254 +14111,177 @@ var require_services = __commonJS({
   "node_modules/nodemailer/lib/well-known/services.json"(exports2, module2) {
     module2.exports = {
       "1und1": {
-        description: "1&1 Mail (German hosting provider)",
         host: "smtp.1und1.de",
         port: 465,
         secure: true,
         authMethod: "LOGIN"
       },
-      "126": {
-        description: "126 Mail (NetEase)",
-        host: "smtp.126.com",
-        port: 465,
-        secure: true
-      },
-      "163": {
-        description: "163 Mail (NetEase)",
-        host: "smtp.163.com",
-        port: 465,
-        secure: true
-      },
       Aliyun: {
-        description: "Alibaba Cloud Mail",
         domains: ["aliyun.com"],
         host: "smtp.aliyun.com",
         port: 465,
         secure: true
       },
-      AliyunQiye: {
-        description: "Alibaba Cloud Enterprise Mail",
-        host: "smtp.qiye.aliyun.com",
-        port: 465,
-        secure: true
-      },
       AOL: {
-        description: "AOL Mail",
         domains: ["aol.com"],
         host: "smtp.aol.com",
         port: 587
       },
       Bluewin: {
-        description: "Bluewin (Swiss email provider)",
         host: "smtpauths.bluewin.ch",
         domains: ["bluewin.ch"],
         port: 465
       },
       DebugMail: {
-        description: "DebugMail (email testing service)",
         host: "debugmail.io",
         port: 25
       },
       DynectEmail: {
-        description: "Dyn Email Delivery",
         aliases: ["Dynect"],
         host: "smtp.dynect.net",
         port: 25
       },
-      ElasticEmail: {
-        description: "Elastic Email",
-        aliases: ["Elastic Email"],
-        host: "smtp.elasticemail.com",
-        port: 465,
-        secure: true
-      },
       Ethereal: {
-        description: "Ethereal Email (email testing service)",
         aliases: ["ethereal.email"],
         host: "smtp.ethereal.email",
         port: 587
       },
       FastMail: {
-        description: "FastMail",
         domains: ["fastmail.fm"],
         host: "smtp.fastmail.com",
         port: 465,
         secure: true
       },
-      "Feishu Mail": {
-        description: "Feishu Mail (Lark)",
-        aliases: ["Feishu", "FeishuMail"],
-        domains: ["www.feishu.cn"],
-        host: "smtp.feishu.cn",
-        port: 465,
-        secure: true
-      },
       "Forward Email": {
-        description: "Forward Email (email forwarding service)",
         aliases: ["FE", "ForwardEmail"],
         domains: ["forwardemail.net"],
         host: "smtp.forwardemail.net",
         port: 465,
         secure: true
       },
+      "Feishu Mail": {
+        aliases: ["Feishu", "FeishuMail"],
+        domains: ["www.feishu.cn"],
+        host: "smtp.feishu.cn",
+        port: 465,
+        secure: true
+      },
       GandiMail: {
-        description: "Gandi Mail",
         aliases: ["Gandi", "Gandi Mail"],
         host: "mail.gandi.net",
         port: 587
       },
       Gmail: {
-        description: "Gmail",
         aliases: ["Google Mail"],
         domains: ["gmail.com", "googlemail.com"],
         host: "smtp.gmail.com",
         port: 465,
         secure: true
       },
-      GMX: {
-        description: "GMX Mail",
-        domains: ["gmx.com", "gmx.net", "gmx.de"],
-        host: "mail.gmx.com",
-        port: 587
-      },
       Godaddy: {
-        description: "GoDaddy Email (US)",
         host: "smtpout.secureserver.net",
         port: 25
       },
       GodaddyAsia: {
-        description: "GoDaddy Email (Asia)",
         host: "smtp.asia.secureserver.net",
         port: 25
       },
       GodaddyEurope: {
-        description: "GoDaddy Email (Europe)",
         host: "smtp.europe.secureserver.net",
         port: 25
       },
       "hot.ee": {
-        description: "Hot.ee (Estonian email provider)",
         host: "mail.hot.ee"
       },
       Hotmail: {
-        description: "Outlook.com / Hotmail",
         aliases: ["Outlook", "Outlook.com", "Hotmail.com"],
         domains: ["hotmail.com", "outlook.com"],
         host: "smtp-mail.outlook.com",
         port: 587
       },
       iCloud: {
-        description: "iCloud Mail",
         aliases: ["Me", "Mac"],
         domains: ["me.com", "mac.com"],
         host: "smtp.mail.me.com",
         port: 587
       },
       Infomaniak: {
-        description: "Infomaniak Mail (Swiss hosting provider)",
         host: "mail.infomaniak.com",
         domains: ["ik.me", "ikmail.com", "etik.com"],
         port: 587
       },
       Loopia: {
-        description: "Loopia (Swedish hosting provider)",
         host: "mailcluster.loopia.se",
         port: 465
       },
-      Loops: {
-        description: "Loops",
-        host: "smtp.loops.so",
-        port: 587
-      },
       "mail.ee": {
-        description: "Mail.ee (Estonian email provider)",
         host: "smtp.mail.ee"
       },
       "Mail.ru": {
-        description: "Mail.ru",
         host: "smtp.mail.ru",
         port: 465,
         secure: true
       },
       "Mailcatch.app": {
-        description: "Mailcatch (email testing service)",
         host: "sandbox-smtp.mailcatch.app",
         port: 2525
       },
       Maildev: {
-        description: "MailDev (local email testing)",
         port: 1025,
         ignoreTLS: true
       },
-      MailerSend: {
-        description: "MailerSend",
-        host: "smtp.mailersend.net",
-        port: 587
-      },
       Mailgun: {
-        description: "Mailgun",
         host: "smtp.mailgun.org",
         port: 465,
         secure: true
       },
       Mailjet: {
-        description: "Mailjet",
         host: "in.mailjet.com",
         port: 587
       },
       Mailosaur: {
-        description: "Mailosaur (email testing service)",
         host: "mailosaur.io",
         port: 25
       },
       Mailtrap: {
-        description: "Mailtrap",
         host: "live.smtp.mailtrap.io",
         port: 587
       },
       Mandrill: {
-        description: "Mandrill (by Mailchimp)",
         host: "smtp.mandrillapp.com",
         port: 587
       },
       Naver: {
-        description: "Naver Mail (Korean email provider)",
         host: "smtp.naver.com",
         port: 587
       },
-      OhMySMTP: {
-        description: "OhMySMTP (email delivery service)",
-        host: "smtp.ohmysmtp.com",
-        port: 587,
-        secure: false
-      },
       One: {
-        description: "One.com Email",
         host: "send.one.com",
         port: 465,
         secure: true
       },
       OpenMailBox: {
-        description: "OpenMailBox",
         aliases: ["OMB", "openmailbox.org"],
         host: "smtp.openmailbox.org",
         port: 465,
         secure: true
       },
       Outlook365: {
-        description: "Microsoft 365 / Office 365",
         host: "smtp.office365.com",
         port: 587,
         secure: false
       },
+      OhMySMTP: {
+        host: "smtp.ohmysmtp.com",
+        port: 587,
+        secure: false
+      },
       Postmark: {
-        description: "Postmark",
         aliases: ["PostmarkApp"],
         host: "smtp.postmarkapp.com",
         port: 2525
       },
       Proton: {
-        description: "Proton Mail",
         aliases: ["ProtonMail", "Proton.me", "Protonmail.com", "Protonmail.ch"],
         domains: ["proton.me", "protonmail.com", "pm.me", "protonmail.ch"],
         host: "smtp.protonmail.ch",
@@ -14391,189 +14289,99 @@ var require_services = __commonJS({
         requireTLS: true
       },
       "qiye.aliyun": {
-        description: "Alibaba Mail Enterprise Edition",
         host: "smtp.mxhichina.com",
         port: "465",
         secure: true
       },
       QQ: {
-        description: "QQ Mail",
         domains: ["qq.com"],
         host: "smtp.qq.com",
         port: 465,
         secure: true
       },
       QQex: {
-        description: "QQ Enterprise Mail",
         aliases: ["QQ Enterprise"],
         domains: ["exmail.qq.com"],
         host: "smtp.exmail.qq.com",
         port: 465,
         secure: true
       },
-      Resend: {
-        description: "Resend",
-        host: "smtp.resend.com",
-        port: 465,
-        secure: true
-      },
       SendCloud: {
-        description: "SendCloud (Chinese email delivery)",
         host: "smtp.sendcloud.net",
         port: 2525
       },
       SendGrid: {
-        description: "SendGrid",
         host: "smtp.sendgrid.net",
         port: 587
       },
       SendinBlue: {
-        description: "Brevo (formerly Sendinblue)",
         aliases: ["Brevo"],
         host: "smtp-relay.brevo.com",
         port: 587
       },
       SendPulse: {
-        description: "SendPulse",
         host: "smtp-pulse.com",
         port: 465,
         secure: true
       },
       SES: {
-        description: "AWS SES US East (N. Virginia)",
         host: "email-smtp.us-east-1.amazonaws.com",
         port: 465,
         secure: true
       },
+      "SES-US-EAST-1": {
+        host: "email-smtp.us-east-1.amazonaws.com",
+        port: 465,
+        secure: true
+      },
+      "SES-US-WEST-2": {
+        host: "email-smtp.us-west-2.amazonaws.com",
+        port: 465,
+        secure: true
+      },
+      "SES-EU-WEST-1": {
+        host: "email-smtp.eu-west-1.amazonaws.com",
+        port: 465,
+        secure: true
+      },
+      "SES-AP-SOUTH-1": {
+        host: "email-smtp.ap-south-1.amazonaws.com",
+        port: 465,
+        secure: true
+      },
       "SES-AP-NORTHEAST-1": {
-        description: "AWS SES Asia Pacific (Tokyo)",
         host: "email-smtp.ap-northeast-1.amazonaws.com",
         port: 465,
         secure: true
       },
       "SES-AP-NORTHEAST-2": {
-        description: "AWS SES Asia Pacific (Seoul)",
         host: "email-smtp.ap-northeast-2.amazonaws.com",
         port: 465,
         secure: true
       },
       "SES-AP-NORTHEAST-3": {
-        description: "AWS SES Asia Pacific (Osaka)",
         host: "email-smtp.ap-northeast-3.amazonaws.com",
         port: 465,
         secure: true
       },
-      "SES-AP-SOUTH-1": {
-        description: "AWS SES Asia Pacific (Mumbai)",
-        host: "email-smtp.ap-south-1.amazonaws.com",
-        port: 465,
-        secure: true
-      },
       "SES-AP-SOUTHEAST-1": {
-        description: "AWS SES Asia Pacific (Singapore)",
         host: "email-smtp.ap-southeast-1.amazonaws.com",
         port: 465,
         secure: true
       },
       "SES-AP-SOUTHEAST-2": {
-        description: "AWS SES Asia Pacific (Sydney)",
         host: "email-smtp.ap-southeast-2.amazonaws.com",
         port: 465,
         secure: true
       },
-      "SES-CA-CENTRAL-1": {
-        description: "AWS SES Canada (Central)",
-        host: "email-smtp.ca-central-1.amazonaws.com",
-        port: 465,
-        secure: true
-      },
-      "SES-EU-CENTRAL-1": {
-        description: "AWS SES Europe (Frankfurt)",
-        host: "email-smtp.eu-central-1.amazonaws.com",
-        port: 465,
-        secure: true
-      },
-      "SES-EU-NORTH-1": {
-        description: "AWS SES Europe (Stockholm)",
-        host: "email-smtp.eu-north-1.amazonaws.com",
-        port: 465,
-        secure: true
-      },
-      "SES-EU-WEST-1": {
-        description: "AWS SES Europe (Ireland)",
-        host: "email-smtp.eu-west-1.amazonaws.com",
-        port: 465,
-        secure: true
-      },
-      "SES-EU-WEST-2": {
-        description: "AWS SES Europe (London)",
-        host: "email-smtp.eu-west-2.amazonaws.com",
-        port: 465,
-        secure: true
-      },
-      "SES-EU-WEST-3": {
-        description: "AWS SES Europe (Paris)",
-        host: "email-smtp.eu-west-3.amazonaws.com",
-        port: 465,
-        secure: true
-      },
-      "SES-SA-EAST-1": {
-        description: "AWS SES South America (S\xE3o Paulo)",
-        host: "email-smtp.sa-east-1.amazonaws.com",
-        port: 465,
-        secure: true
-      },
-      "SES-US-EAST-1": {
-        description: "AWS SES US East (N. Virginia)",
-        host: "email-smtp.us-east-1.amazonaws.com",
-        port: 465,
-        secure: true
-      },
-      "SES-US-EAST-2": {
-        description: "AWS SES US East (Ohio)",
-        host: "email-smtp.us-east-2.amazonaws.com",
-        port: 465,
-        secure: true
-      },
-      "SES-US-GOV-EAST-1": {
-        description: "AWS SES GovCloud (US-East)",
-        host: "email-smtp.us-gov-east-1.amazonaws.com",
-        port: 465,
-        secure: true
-      },
-      "SES-US-GOV-WEST-1": {
-        description: "AWS SES GovCloud (US-West)",
-        host: "email-smtp.us-gov-west-1.amazonaws.com",
-        port: 465,
-        secure: true
-      },
-      "SES-US-WEST-1": {
-        description: "AWS SES US West (N. California)",
-        host: "email-smtp.us-west-1.amazonaws.com",
-        port: 465,
-        secure: true
-      },
-      "SES-US-WEST-2": {
-        description: "AWS SES US West (Oregon)",
-        host: "email-smtp.us-west-2.amazonaws.com",
-        port: 465,
-        secure: true
-      },
       Seznam: {
-        description: "Seznam Email (Czech email provider)",
         aliases: ["Seznam Email"],
         domains: ["seznam.cz", "email.cz", "post.cz", "spoluzaci.cz"],
         host: "smtp.seznam.cz",
         port: 465,
         secure: true
       },
-      SMTP2GO: {
-        description: "SMTP2GO",
-        host: "mail.smtp2go.com",
-        port: 2525
-      },
       Sparkpost: {
-        description: "SparkPost",
         aliases: ["SparkPost", "SparkPost Mail"],
         domains: ["sparkpost.com"],
         host: "smtp.sparkpostmail.com",
@@ -14581,37 +14389,36 @@ var require_services = __commonJS({
         secure: false
       },
       Tipimail: {
-        description: "Tipimail (email delivery service)",
         host: "smtp.tipimail.com",
         port: 587
       },
-      Tutanota: {
-        description: "Tutanota (Tuta Mail)",
-        domains: ["tutanota.com", "tuta.com", "tutanota.de", "tuta.io"],
-        host: "smtp.tutanota.com",
-        port: 465,
-        secure: true
-      },
       Yahoo: {
-        description: "Yahoo Mail",
         domains: ["yahoo.com"],
         host: "smtp.mail.yahoo.com",
         port: 465,
         secure: true
       },
       Yandex: {
-        description: "Yandex Mail",
         domains: ["yandex.ru"],
         host: "smtp.yandex.ru",
         port: 465,
         secure: true
       },
       Zoho: {
-        description: "Zoho Mail",
         host: "smtp.zoho.com",
         port: 465,
         secure: true,
         authMethod: "LOGIN"
+      },
+      "126": {
+        host: "smtp.126.com",
+        port: 465,
+        secure: true
+      },
+      "163": {
+        host: "smtp.163.com",
+        port: 465,
+        secure: true
       }
     };
   }
@@ -14990,9 +14797,6 @@ var require_smtp_pool = __commonJS({
               this._continueProcessing();
             }, 50);
           } else {
-            if (!this._closed && this.idling && !this._connections.length) {
-              this.emit("clear");
-            }
             this._continueProcessing();
           }
         });
@@ -15925,7 +15729,6 @@ var require_ses_transport = __commonJS({
     var packageData = require_package();
     var shared = require_shared();
     var LeWindows = require_le_windows();
-    var MimeNode = require_mime_node();
     var SESTransport = class extends EventEmitter {
       constructor(options) {
         super();
@@ -15937,12 +15740,95 @@ var require_ses_transport = __commonJS({
         this.logger = shared.getLogger(this.options, {
           component: this.options.component || "ses-transport"
         });
+        this.maxConnections = Number(this.options.maxConnections) || Infinity;
+        this.connections = 0;
+        this.sendingRate = Number(this.options.sendingRate) || Infinity;
+        this.sendingRateTTL = null;
+        this.rateInterval = 1e3;
+        this.rateMessages = [];
+        this.pending = [];
+        this.idling = true;
+        setImmediate(() => {
+          if (this.idling) {
+            this.emit("idle");
+          }
+        });
       }
-      getRegion(cb) {
-        if (this.ses.sesClient.config && typeof this.ses.sesClient.config.region === "function") {
-          return this.ses.sesClient.config.region().then((region) => cb(null, region)).catch((err) => cb(err));
+      /**
+       * Schedules a sending of a message
+       *
+       * @param {Object} emailMessage MailComposer object
+       * @param {Function} callback Callback function to run when the sending is completed
+       */
+      send(mail, callback) {
+        if (this.connections >= this.maxConnections) {
+          this.idling = false;
+          return this.pending.push({
+            mail,
+            callback
+          });
         }
-        return cb(null, false);
+        if (!this._checkSendingRate()) {
+          this.idling = false;
+          return this.pending.push({
+            mail,
+            callback
+          });
+        }
+        this._send(mail, (...args) => {
+          setImmediate(() => callback(...args));
+          this._sent();
+        });
+      }
+      _checkRatedQueue() {
+        if (this.connections >= this.maxConnections || !this._checkSendingRate()) {
+          return;
+        }
+        if (!this.pending.length) {
+          if (!this.idling) {
+            this.idling = true;
+            this.emit("idle");
+          }
+          return;
+        }
+        let next = this.pending.shift();
+        this._send(next.mail, (...args) => {
+          setImmediate(() => next.callback(...args));
+          this._sent();
+        });
+      }
+      _checkSendingRate() {
+        clearTimeout(this.sendingRateTTL);
+        let now = Date.now();
+        let oldest = false;
+        for (let i = this.rateMessages.length - 1; i >= 0; i--) {
+          if (this.rateMessages[i].ts >= now - this.rateInterval && (!oldest || this.rateMessages[i].ts < oldest)) {
+            oldest = this.rateMessages[i].ts;
+          }
+          if (this.rateMessages[i].ts < now - this.rateInterval && !this.rateMessages[i].pending) {
+            this.rateMessages.splice(i, 1);
+          }
+        }
+        if (this.rateMessages.length < this.sendingRate) {
+          return true;
+        }
+        let delay = Math.max(oldest + 1001, now + 20);
+        this.sendingRateTTL = setTimeout(() => this._checkRatedQueue(), now - delay);
+        try {
+          this.sendingRateTTL.unref();
+        } catch (E) {
+        }
+        return false;
+      }
+      _sent() {
+        this.connections--;
+        this._checkRatedQueue();
+      }
+      /**
+       * Returns true if there are free slots in the queue
+       */
+      isIdle() {
+        return this.idling;
       }
       /**
        * Compiles a mailcomposer message and forwards it to SES
@@ -15950,16 +15836,13 @@ var require_ses_transport = __commonJS({
        * @param {Object} emailMessage MailComposer object
        * @param {Function} callback Callback function to run when the sending is completed
        */
-      send(mail, callback) {
+      _send(mail, callback) {
         let statObject = {
           ts: Date.now(),
           pending: true
         };
-        let fromHeader = mail.message._headers.find((header) => /^from$/i.test(header.key));
-        if (fromHeader) {
-          let mimeNode = new MimeNode("text/plain");
-          fromHeader = mimeNode._convertAddresses(mimeNode._parseAddresses(fromHeader.value));
-        }
+        this.connections++;
+        this.rateMessages.push(statObject);
         let envelope = mail.data.envelope || mail.message.getEnvelope();
         let messageId = mail.message.messageId();
         let recipients = [].concat(envelope.to || []);
@@ -16018,32 +15901,40 @@ var require_ses_transport = __commonJS({
               return callback(err);
             }
             let sesMessage = {
-              Content: {
-                Raw: {
-                  // required
-                  Data: raw
-                  // required
-                }
+              RawMessage: {
+                // required
+                Data: raw
+                // required
               },
-              FromEmailAddress: fromHeader ? fromHeader : envelope.from,
-              Destination: {
-                ToAddresses: envelope.to
-              }
+              Source: envelope.from,
+              Destinations: envelope.to
             };
             Object.keys(mail.data.ses || {}).forEach((key) => {
               sesMessage[key] = mail.data.ses[key];
             });
-            this.getRegion((err2, region) => {
+            let ses = (this.ses.aws ? this.ses.ses : this.ses) || {};
+            let aws = this.ses.aws || {};
+            let getRegion = (cb) => {
+              if (ses.config && typeof ses.config.region === "function") {
+                return ses.config.region().then((region) => cb(null, region)).catch((err2) => cb(err2));
+              }
+              return cb(null, ses.config && ses.config.region || "us-east-1");
+            };
+            getRegion((err2, region) => {
               if (err2 || !region) {
                 region = "us-east-1";
               }
-              const command = new this.ses.SendEmailCommand(sesMessage);
-              const sendPromise = this.ses.sesClient.send(command);
+              let sendPromise;
+              if (typeof ses.send === "function" && aws.SendRawEmailCommand) {
+                sendPromise = ses.send(new aws.SendRawEmailCommand(sesMessage));
+              } else {
+                sendPromise = ses.sendRawEmail(sesMessage).promise();
+              }
               sendPromise.then((data) => {
                 if (region === "us-east-1") {
                   region = "email";
                 }
-                statObject.pending = true;
+                statObject.pending = false;
                 callback(null, {
                   envelope: {
                     from: envelope.from,
@@ -16077,36 +15968,33 @@ var require_ses_transport = __commonJS({
        */
       verify(callback) {
         let promise;
+        let ses = (this.ses.aws ? this.ses.ses : this.ses) || {};
+        let aws = this.ses.aws || {};
+        const sesMessage = {
+          RawMessage: {
+            // required
+            Data: "From: invalid@invalid\r\nTo: invalid@invalid\r\n Subject: Invalid\r\n\r\nInvalid"
+          },
+          Source: "invalid@invalid",
+          Destinations: ["invalid@invalid"]
+        };
         if (!callback) {
           promise = new Promise((resolve, reject) => {
             callback = shared.callbackPromise(resolve, reject);
           });
         }
         const cb = (err) => {
-          if (err && !["InvalidParameterValue", "MessageRejected"].includes(err.code || err.Code || err.name)) {
+          if (err && (err.code || err.Code) !== "InvalidParameterValue") {
             return callback(err);
           }
           return callback(null, true);
         };
-        const sesMessage = {
-          Content: {
-            Raw: {
-              Data: Buffer.from("From: <invalid@invalid>\r\nTo: <invalid@invalid>\r\n Subject: Invalid\r\n\r\nInvalid")
-            }
-          },
-          FromEmailAddress: "invalid@invalid",
-          Destination: {
-            ToAddresses: ["invalid@invalid"]
-          }
-        };
-        this.getRegion((err, region) => {
-          if (err || !region) {
-            region = "us-east-1";
-          }
-          const command = new this.ses.SendEmailCommand(sesMessage);
-          const sendPromise = this.ses.sesClient.send(command);
-          sendPromise.then((data) => cb(null, data)).catch((err2) => cb(err2));
-        });
+        if (typeof ses.send === "function" && aws.SendRawEmailCommand) {
+          sesMessage.RawMessage.Data = Buffer.from(sesMessage.RawMessage.Data);
+          ses.send(new aws.SendRawEmailCommand(sesMessage), cb);
+        } else {
+          ses.sendRawEmail(sesMessage, cb);
+        }
         return promise;
       }
     };
@@ -16133,7 +16021,7 @@ var require_nodemailer = __commonJS({
     var ETHEREAL_API_KEY = (process.env.ETHEREAL_API_KEY || "").replace(/\s*/g, "") || null;
     var ETHEREAL_CACHE = ["true", "yes", "y", "1"].includes((process.env.ETHEREAL_CACHE || "yes").toString().trim().toLowerCase());
     var testAccount = false;
-    module2.exports.createTransport = function(transporter2, defaults2) {
+    module2.exports.createTransport = function(transporter2, defaults) {
       let urlConfig;
       let options;
       let mailer;
@@ -16156,17 +16044,12 @@ var require_nodemailer = __commonJS({
         } else if (options.jsonTransport) {
           transporter2 = new JSONTransport(options);
         } else if (options.SES) {
-          if (options.SES.ses && options.SES.aws) {
-            let error = new Error("Using legacy SES configuration, expecting @aws-sdk/client-sesv2, see https://nodemailer.com/transports/ses/");
-            error.code = "LegacyConfig";
-            throw error;
-          }
           transporter2 = new SESTransport(options);
         } else {
           transporter2 = new SMTPTransport(options);
         }
       }
-      mailer = new Mailer(transporter2, options, defaults2);
+      mailer = new Mailer(transporter2, options, defaults);
       return mailer;
     };
     module2.exports.createTestAccount = function(apiUrl, callback) {
@@ -16248,49 +16131,14 @@ var require_nodemailer = __commonJS({
   }
 });
 
-// netlify/functions/submit-appointment.js
-var submit_appointment_exports = {};
-__export(submit_appointment_exports, {
-  handler: () => handler
-});
-module.exports = __toCommonJS(submit_appointment_exports);
-
-// node_modules/pg/esm/index.mjs
-var import_lib = __toESM(require_lib2(), 1);
-var Client = import_lib.default.Client;
-var Pool = import_lib.default.Pool;
-var Connection = import_lib.default.Connection;
-var types = import_lib.default.types;
-var Query = import_lib.default.Query;
-var DatabaseError = import_lib.default.DatabaseError;
-var escapeIdentifier = import_lib.default.escapeIdentifier;
-var escapeLiteral = import_lib.default.escapeLiteral;
-var Result = import_lib.default.Result;
-var TypeOverrides = import_lib.default.TypeOverrides;
-var defaults = import_lib.default.defaults;
-var esm_default = import_lib.default;
-
-// netlify/functions/db.js
-var { Pool: Pool2 } = esm_default;
-var pool = new Pool2({
-  connectionString: process.env.DATABASE_URL
-});
-var db_default = pool;
-
-// netlify/functions/submit-appointment.js
-var { Client: Client2 } = require_lib2();
+// netlify/functions/submit-appointment.cjs
+var pool = require_db();
 var nodemailer = require_nodemailer();
-var client = new Client2({
-  connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false }
-});
 var transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
     user: process.env.EMAIL_USER,
-    // seu e-mail, ex: atenderecentro@gmail.com
     pass: process.env.GMAIL_APP_PASSWORD
-    // senha ou App Password do Gmail
   }
 });
 exports.handler = async (event) => {
@@ -16309,7 +16157,6 @@ exports.handler = async (event) => {
     phone,
     propertyAddress,
     profile,
-    otherProfileDescription,
     query,
     companyName,
     role,
@@ -16319,81 +16166,8 @@ exports.handler = async (event) => {
     selectedTimes
   } = data;
   try {
-    await client.connect();
+    const client = await pool.connect();
     const res = await client.query(
-      `INSERT INTO appointments (
-        full_name,
-        email,
-        phone,
-        property_address,
-        profile,
-        query,
-        company_name,
-        role,
-        company_address,
-        lgpd_consent,
-        appt_date,
-        appt_time
-      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING id`,
-      [
-        fullName,
-        email,
-        phone,
-        propertyAddress,
-        profile,
-        query,
-        companyName,
-        role,
-        companyAddress,
-        lgpdConsent,
-        date,
-        selectedTimes.preference
-      ]
-    );
-    const appointmentId = res.rows[0].id;
-    await transporter.sendMail({
-      from: process.env.EMAIL_USER,
-      to: email,
-      subject: "Confirma\xE7\xE3o de Agendamento - Atende Recentro 2025",
-      text: `Ol\xE1 ${fullName},
-
-Seu agendamento foi confirmado para o dia ${date} \xE0s ${selectedTimes.preference}.
-
-Obrigado,
-Equipe Atende Recentro 2025`
-    });
-    return {
-      statusCode: 200,
-      body: JSON.stringify({ success: true, id: appointmentId })
-    };
-  } catch (err) {
-    console.error("Erro ao processar agendamento:", err);
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ success: false, message: err.message })
-    };
-  } finally {
-    await client.end();
-  }
-};
-var handler = async (event) => {
-  try {
-    const client2 = await db_default.connect();
-    const {
-      fullName,
-      email,
-      phone,
-      propertyAddress,
-      profile,
-      query,
-      companyName,
-      role,
-      companyAddress,
-      lgpdConsent,
-      date,
-      selectedTimes
-    } = JSON.parse(event.body);
-    const result = await client2.query(
       `INSERT INTO appointments 
         (full_name, email, phone, property_address, profile, query, company_name, role, company_address, lgpd_consent, appt_date, appt_time) 
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING id`,
@@ -16412,21 +16186,18 @@ var handler = async (event) => {
         selectedTimes.preference
       ]
     );
-    client2.release();
-    return {
-      statusCode: 200,
-      body: JSON.stringify({ success: true, id: result.rows[0].id })
-    };
+    client.release();
+    const appointmentId = res.rows[0].id;
+    await transporter.sendMail({
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: "Confirma\xE7\xE3o de Agendamento - Atende Recentro 2025",
+      text: `Ol\xE1 ${fullName}, seu agendamento foi confirmado para o dia ${date} \xE0s ${selectedTimes.preference}.`
+    });
+    return { statusCode: 200, body: JSON.stringify({ success: true, id: appointmentId }) };
   } catch (err) {
     console.error("Erro ao processar agendamento:", err);
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ success: false, message: err.message })
-    };
+    return { statusCode: 500, body: JSON.stringify({ success: false, message: err.message }) };
   }
 };
-// Annotate the CommonJS export names for ESM import in node:
-0 && (module.exports = {
-  handler
-});
 //# sourceMappingURL=submit-appointment.js.map

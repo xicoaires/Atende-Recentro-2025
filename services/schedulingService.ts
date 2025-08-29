@@ -1,27 +1,34 @@
+// schedulingService.ts
 import { AppointmentData } from '../types';
 
-export const submitAppointment = async (data: AppointmentData) => {
-  console.log('Chamando submitAppointment com dados:', data);
-  const res = await fetch('/.netlify/functions/submit-appointment', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
-  });
+export async function submitAppointment(appointmentData: AppointmentData) {
+  try {
+    const response = await fetch("/.netlify/functions/submit-appointment", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(appointmentData),
+    });
 
-  const result = await res.json();
-  console.log('Resposta do backend submitAppointment:', result);
-  return result;
-};
+    // Verifica se o backend retornou 2xx
+    if (!response.ok) {
+      const text = await response.text(); // pega corpo como texto para debug
+      console.error("Erro inesperado no submit:", text);
+      throw new Error(`Erro ao enviar agendamento: ${response.status}`);
+    }
 
-export const fetchAvailability = async (date: string, agencies: string[]) => {
-  console.log('Chamando fetchAvailability para', date, agencies);
-  const res = await fetch('/.netlify/functions/check-availability', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ date, agencies }),
-  });
+    // Converte para JSON apenas se houver conteúdo
+    const text = await response.text();
+    if (!text) {
+      throw new Error("Resposta vazia do servidor");
+    }
 
-  const data = await res.json();
-  console.log('Resposta do backend fetchAvailability:', data);
-  return data;
-};
+    const result = JSON.parse(text);
+    return result;
+
+  } catch (err) {
+    console.error("Erro no submitAppointment:", err);
+    throw err;
+  }
+}
