@@ -1,8 +1,8 @@
-const { Client } = require("pg");
+const { Pool } = require("pg");
 const nodemailer = require("nodemailer");
 
-// Conexão com o banco
-const client = new Client({
+// Configuração do Pool (evita erro de "Client already connected")
+const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false },
 });
@@ -18,10 +18,31 @@ const transporter = nodemailer.createTransport({
 
 // Função para formatar a data corretamente
 function formatDatePTBR(dateStr) {
-  const [year, month, day] = dateStr.split('-').map(Number);
+  const [year, month, day] = dateStr.split("-").map(Number);
   const dateObj = new Date(year, month - 1, day); // mês zero-indexado
-  const weekdays = ['domingo','segunda-feira','terça-feira','quarta-feira','quinta-feira','sexta-feira','sábado'];
-  const months = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+  const weekdays = [
+    "domingo",
+    "segunda-feira",
+    "terça-feira",
+    "quarta-feira",
+    "quinta-feira",
+    "sexta-feira",
+    "sábado",
+  ];
+  const months = [
+    "janeiro",
+    "fevereiro",
+    "março",
+    "abril",
+    "maio",
+    "junho",
+    "julho",
+    "agosto",
+    "setembro",
+    "outubro",
+    "novembro",
+    "dezembro",
+  ];
 
   const weekday = weekdays[dateObj.getDay()];
   const monthName = months[dateObj.getMonth()];
@@ -48,7 +69,7 @@ exports.handler = async (event) => {
     phone,
     propertyAddress,
     profile,
-    otherProfileDescription,
+    otherProfileDescription, // mantido no destructuring
     query,
     companyName,
     role,
@@ -59,9 +80,28 @@ exports.handler = async (event) => {
   } = data;
 
   try {
-    await client.connect();
+    // Verifica quantos agendamentos já existem para a mesma data e hora
+    const check = await pool.query(
+      `SELECT COUNT(*) AS total 
+       FROM appointments 
+       WHERE appt_date = $1 AND appt_time = $2`,
+      [date, selectedTimes.preference]
+    );
 
-    const res = await client.query(
+    const total = parseInt(check.rows[0].total, 10);
+
+    if (total >= 40) {
+      return {
+        statusCode: 400,
+        body: JSON.stringify({
+          success: false,
+          message: "Esse horário já atingiu o limite de 40 agendamentos.",
+        }),
+      };
+    }
+
+    // Insere o agendamento no banco (sem otherProfileDescription)
+    const res = await pool.query(
       `INSERT INTO appointments (
         full_name,
         email,
@@ -100,7 +140,7 @@ exports.handler = async (event) => {
     // Enviar e-mail de confirmação
     await transporter.sendMail({
       from: process.env.EMAIL_USER,
-      to: email + "; francisco.aires@recife.pe.gov.br; jucicleide.silva@recife.pe.gov.br",
+      to: email,
       subject: "Confirmação de Agendamento - Atende Recentro 2025",
       html: `
         <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; background-color: #f9f9f9; padding: 20px;">
@@ -119,7 +159,9 @@ exports.handler = async (event) => {
               <li><strong>Data:</strong> ${formattedDate}</li>
               <li><strong>Horário:</strong> ${selectedTimes.preference}</li>
               <li><strong>Endereço do imóvel:</strong> ${propertyAddress}</li>
-      
+              ${companyName ? `<li><strong>Empresa:</strong> ${companyName}</li>` : ''}
+              ${role ? `<li><strong>Cargo:</strong> ${role}</li>` : ''}
+              ${query ? `<li><strong>Motivo:</strong> ${query}</li>` : ''}
             </ul>
 
             <p style="font-size: 16px;">Estamos ansiosos para recebê-lo(a) no Atende Recentro 2025.</p>
@@ -131,7 +173,6 @@ exports.handler = async (event) => {
 
           </div>
         </div>
-
       `,
     });
 
@@ -145,7 +186,5 @@ exports.handler = async (event) => {
       statusCode: 500,
       body: JSON.stringify({ success: false, message: err.message }),
     };
-  } finally {
-    await client.end();
   }
 };

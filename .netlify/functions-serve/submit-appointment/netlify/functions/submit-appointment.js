@@ -3570,7 +3570,7 @@ var require_client = __commonJS({
     var defaults = require_defaults();
     var Connection = require_connection();
     var crypto = require_utils2();
-    var Client2 = class extends EventEmitter {
+    var Client = class extends EventEmitter {
       constructor(config) {
         super();
         this.connectionParameters = new ConnectionParameters(config);
@@ -3931,8 +3931,8 @@ var require_client = __commonJS({
         }
         return data;
       }
-      cancel(client2, query) {
-        if (client2.activeQuery === query) {
+      cancel(client, query) {
+        if (client.activeQuery === query) {
           const con = this.connection;
           if (this.host && this.host.indexOf("/") === 0) {
             con.connect(this.host + "/.s.PGSQL." + this.port);
@@ -3940,10 +3940,10 @@ var require_client = __commonJS({
             con.connect(this.port, this.host);
           }
           con.on("connect", function() {
-            con.cancel(client2.processID, client2.secretKey);
+            con.cancel(client.processID, client.secretKey);
           });
-        } else if (client2.queryQueue.indexOf(query) !== -1) {
-          client2.queryQueue.splice(client2.queryQueue.indexOf(query), 1);
+        } else if (client.queryQueue.indexOf(query) !== -1) {
+          client.queryQueue.splice(client.queryQueue.indexOf(query), 1);
         }
       }
       setTypeParser(oid, format, parseFn) {
@@ -4079,8 +4079,8 @@ var require_client = __commonJS({
         }
       }
     };
-    Client2.Query = Query;
-    module2.exports = Client2;
+    Client.Query = Query;
+    module2.exports = Client;
   }
 });
 
@@ -4096,8 +4096,8 @@ var require_pg_pool = __commonJS({
       return i === -1 ? void 0 : list.splice(i, 1)[0];
     };
     var IdleItem = class {
-      constructor(client2, idleListener, timeoutId) {
-        this.client = client2;
+      constructor(client, idleListener, timeoutId) {
+        this.client = client;
         this.idleListener = idleListener;
         this.timeoutId = timeoutId;
       }
@@ -4116,8 +4116,8 @@ var require_pg_pool = __commonJS({
       }
       let rej;
       let res;
-      const cb = function(err, client2) {
-        err ? rej(err) : res(client2);
+      const cb = function(err, client) {
+        err ? rej(err) : res(client);
       };
       const result = new Promise2(function(resolve, reject) {
         res = resolve;
@@ -4128,19 +4128,19 @@ var require_pg_pool = __commonJS({
       });
       return { callback: cb, result };
     }
-    function makeIdleListener(pool, client2) {
+    function makeIdleListener(pool2, client) {
       return function idleListener(err) {
-        err.client = client2;
-        client2.removeListener("error", idleListener);
-        client2.on("error", () => {
-          pool.log("additional client error after disconnection due to error", err);
+        err.client = client;
+        client.removeListener("error", idleListener);
+        client.on("error", () => {
+          pool2.log("additional client error after disconnection due to error", err);
         });
-        pool._remove(client2);
-        pool.emit("error", err, client2);
+        pool2._remove(client);
+        pool2.emit("error", err, client);
       };
     }
-    var Pool = class extends EventEmitter {
-      constructor(options, Client2) {
+    var Pool2 = class extends EventEmitter {
+      constructor(options, Client) {
         super();
         this.options = Object.assign({}, options);
         if (options != null && "password" in options) {
@@ -4163,7 +4163,7 @@ var require_pg_pool = __commonJS({
         this.options.maxLifetimeSeconds = this.options.maxLifetimeSeconds || 0;
         this.log = this.options.log || function() {
         };
-        this.Client = this.options.Client || Client2 || require_lib2().Client;
+        this.Client = this.options.Client || Client || require_lib2().Client;
         this.Promise = this.options.Promise || global.Promise;
         if (typeof this.options.idleTimeoutMillis === "undefined") {
           this.options.idleTimeoutMillis = 1e4;
@@ -4212,25 +4212,25 @@ var require_pg_pool = __commonJS({
         if (this._idle.length) {
           const idleItem = this._idle.pop();
           clearTimeout(idleItem.timeoutId);
-          const client2 = idleItem.client;
-          client2.ref && client2.ref();
+          const client = idleItem.client;
+          client.ref && client.ref();
           const idleListener = idleItem.idleListener;
-          return this._acquireClient(client2, pendingItem, idleListener, false);
+          return this._acquireClient(client, pendingItem, idleListener, false);
         }
         if (!this._isFull()) {
           return this.newClient(pendingItem);
         }
         throw new Error("unexpected condition");
       }
-      _remove(client2, callback) {
-        const removed = removeWhere(this._idle, (item) => item.client === client2);
+      _remove(client, callback) {
+        const removed = removeWhere(this._idle, (item) => item.client === client);
         if (removed !== void 0) {
           clearTimeout(removed.timeoutId);
         }
-        this._clients = this._clients.filter((c) => c !== client2);
+        this._clients = this._clients.filter((c) => c !== client);
         const context = this;
-        client2.end(() => {
-          context.emit("remove", client2);
+        client.end(() => {
+          context.emit("remove", client);
           if (typeof callback === "function") {
             callback();
           }
@@ -4271,9 +4271,9 @@ var require_pg_pool = __commonJS({
         return result;
       }
       newClient(pendingItem) {
-        const client2 = new this.Client(this.options);
-        this._clients.push(client2);
-        const idleListener = makeIdleListener(this, client2);
+        const client = new this.Client(this.options);
+        this._clients.push(client);
+        const idleListener = makeIdleListener(this, client);
         this.log("checking client timeout");
         let tid;
         let timeoutHit = false;
@@ -4281,18 +4281,18 @@ var require_pg_pool = __commonJS({
           tid = setTimeout(() => {
             this.log("ending client due to timeout");
             timeoutHit = true;
-            client2.connection ? client2.connection.stream.destroy() : client2.end();
+            client.connection ? client.connection.stream.destroy() : client.end();
           }, this.options.connectionTimeoutMillis);
         }
         this.log("connecting new client");
-        client2.connect((err) => {
+        client.connect((err) => {
           if (tid) {
             clearTimeout(tid);
           }
-          client2.on("error", idleListener);
+          client.on("error", idleListener);
           if (err) {
             this.log("client failed to connect", err);
-            this._clients = this._clients.filter((c) => c !== client2);
+            this._clients = this._clients.filter((c) => c !== client);
             if (timeoutHit) {
               err = new Error("Connection terminated due to connection timeout", { cause: err });
             }
@@ -4305,95 +4305,95 @@ var require_pg_pool = __commonJS({
             if (this.options.maxLifetimeSeconds !== 0) {
               const maxLifetimeTimeout = setTimeout(() => {
                 this.log("ending client due to expired lifetime");
-                this._expired.add(client2);
-                const idleIndex = this._idle.findIndex((idleItem) => idleItem.client === client2);
+                this._expired.add(client);
+                const idleIndex = this._idle.findIndex((idleItem) => idleItem.client === client);
                 if (idleIndex !== -1) {
                   this._acquireClient(
-                    client2,
-                    new PendingItem((err2, client3, clientRelease) => clientRelease()),
+                    client,
+                    new PendingItem((err2, client2, clientRelease) => clientRelease()),
                     idleListener,
                     false
                   );
                 }
               }, this.options.maxLifetimeSeconds * 1e3);
               maxLifetimeTimeout.unref();
-              client2.once("end", () => clearTimeout(maxLifetimeTimeout));
+              client.once("end", () => clearTimeout(maxLifetimeTimeout));
             }
-            return this._acquireClient(client2, pendingItem, idleListener, true);
+            return this._acquireClient(client, pendingItem, idleListener, true);
           }
         });
       }
       // acquire a client for a pending work item
-      _acquireClient(client2, pendingItem, idleListener, isNew) {
+      _acquireClient(client, pendingItem, idleListener, isNew) {
         if (isNew) {
-          this.emit("connect", client2);
+          this.emit("connect", client);
         }
-        this.emit("acquire", client2);
-        client2.release = this._releaseOnce(client2, idleListener);
-        client2.removeListener("error", idleListener);
+        this.emit("acquire", client);
+        client.release = this._releaseOnce(client, idleListener);
+        client.removeListener("error", idleListener);
         if (!pendingItem.timedOut) {
           if (isNew && this.options.verify) {
-            this.options.verify(client2, (err) => {
+            this.options.verify(client, (err) => {
               if (err) {
-                client2.release(err);
+                client.release(err);
                 return pendingItem.callback(err, void 0, NOOP);
               }
-              pendingItem.callback(void 0, client2, client2.release);
+              pendingItem.callback(void 0, client, client.release);
             });
           } else {
-            pendingItem.callback(void 0, client2, client2.release);
+            pendingItem.callback(void 0, client, client.release);
           }
         } else {
           if (isNew && this.options.verify) {
-            this.options.verify(client2, client2.release);
+            this.options.verify(client, client.release);
           } else {
-            client2.release();
+            client.release();
           }
         }
       }
       // returns a function that wraps _release and throws if called more than once
-      _releaseOnce(client2, idleListener) {
+      _releaseOnce(client, idleListener) {
         let released = false;
         return (err) => {
           if (released) {
             throwOnDoubleRelease();
           }
           released = true;
-          this._release(client2, idleListener, err);
+          this._release(client, idleListener, err);
         };
       }
       // release a client back to the poll, include an error
       // to remove it from the pool
-      _release(client2, idleListener, err) {
-        client2.on("error", idleListener);
-        client2._poolUseCount = (client2._poolUseCount || 0) + 1;
-        this.emit("release", err, client2);
-        if (err || this.ending || !client2._queryable || client2._ending || client2._poolUseCount >= this.options.maxUses) {
-          if (client2._poolUseCount >= this.options.maxUses) {
+      _release(client, idleListener, err) {
+        client.on("error", idleListener);
+        client._poolUseCount = (client._poolUseCount || 0) + 1;
+        this.emit("release", err, client);
+        if (err || this.ending || !client._queryable || client._ending || client._poolUseCount >= this.options.maxUses) {
+          if (client._poolUseCount >= this.options.maxUses) {
             this.log("remove expended client");
           }
-          return this._remove(client2, this._pulseQueue.bind(this));
+          return this._remove(client, this._pulseQueue.bind(this));
         }
-        const isExpired = this._expired.has(client2);
+        const isExpired = this._expired.has(client);
         if (isExpired) {
           this.log("remove expired client");
-          this._expired.delete(client2);
-          return this._remove(client2, this._pulseQueue.bind(this));
+          this._expired.delete(client);
+          return this._remove(client, this._pulseQueue.bind(this));
         }
         let tid;
         if (this.options.idleTimeoutMillis && this._isAboveMin()) {
           tid = setTimeout(() => {
             this.log("remove idle client");
-            this._remove(client2, this._pulseQueue.bind(this));
+            this._remove(client, this._pulseQueue.bind(this));
           }, this.options.idleTimeoutMillis);
           if (this.options.allowExitOnIdle) {
             tid.unref();
           }
         }
         if (this.options.allowExitOnIdle) {
-          client2.unref();
+          client.unref();
         }
-        this._idle.push(new IdleItem(client2, idleListener, tid));
+        this._idle.push(new IdleItem(client, idleListener, tid));
         this._pulseQueue();
       }
       query(text, values, cb) {
@@ -4410,7 +4410,7 @@ var require_pg_pool = __commonJS({
         }
         const response = promisify(this.Promise, cb);
         cb = response.callback;
-        this.connect((err, client2) => {
+        this.connect((err, client) => {
           if (err) {
             return cb(err);
           }
@@ -4420,27 +4420,27 @@ var require_pg_pool = __commonJS({
               return;
             }
             clientReleased = true;
-            client2.release(err2);
+            client.release(err2);
             cb(err2);
           };
-          client2.once("error", onError);
+          client.once("error", onError);
           this.log("dispatching query");
           try {
-            client2.query(text, values, (err2, res) => {
+            client.query(text, values, (err2, res) => {
               this.log("query dispatched");
-              client2.removeListener("error", onError);
+              client.removeListener("error", onError);
               if (clientReleased) {
                 return;
               }
               clientReleased = true;
-              client2.release(err2);
+              client.release(err2);
               if (err2) {
                 return cb(err2);
               }
               return cb(void 0, res);
             });
           } catch (err2) {
-            client2.release(err2);
+            client.release(err2);
             return cb(err2);
           }
         });
@@ -4465,13 +4465,13 @@ var require_pg_pool = __commonJS({
         return this._idle.length;
       }
       get expiredCount() {
-        return this._clients.reduce((acc, client2) => acc + (this._expired.has(client2) ? 1 : 0), 0);
+        return this._clients.reduce((acc, client) => acc + (this._expired.has(client) ? 1 : 0), 0);
       }
       get totalCount() {
         return this._clients.length;
       }
     };
-    module2.exports = Pool;
+    module2.exports = Pool2;
   }
 });
 
@@ -4546,13 +4546,13 @@ var require_query2 = __commonJS({
       );
       return this._promise;
     };
-    NativeQuery.prototype.submit = function(client2) {
+    NativeQuery.prototype.submit = function(client) {
       this.state = "running";
       const self = this;
-      this.native = client2.native;
-      client2.native.arrayMode = this._arrayMode;
+      this.native = client.native;
+      client.native.arrayMode = this._arrayMode;
       let after = function(err, rows, results) {
-        client2.native.arrayMode = false;
+        client.native.arrayMode = false;
         setImmediate(function() {
           self.emit("_done");
         });
@@ -4588,16 +4588,16 @@ var require_query2 = __commonJS({
           console.error("This can cause conflicts and silent errors executing queries");
         }
         const values = (this.values || []).map(utils.prepareValue);
-        if (client2.namedQueries[this.name]) {
-          if (this.text && client2.namedQueries[this.name] !== this.text) {
+        if (client.namedQueries[this.name]) {
+          if (this.text && client.namedQueries[this.name] !== this.text) {
             const err = new Error(`Prepared statements must be unique - '${this.name}' was used for a different statement`);
             return after(err);
           }
-          return client2.native.execute(this.name, values, after);
+          return client.native.execute(this.name, values, after);
         }
-        return client2.native.prepare(this.name, this.text, values.length, function(err) {
+        return client.native.prepare(this.name, this.text, values.length, function(err) {
           if (err) return after(err);
-          client2.namedQueries[self.name] = self.text;
+          client.namedQueries[self.name] = self.text;
           return self.native.execute(self.name, values, after);
         });
       } else if (this.values) {
@@ -4606,11 +4606,11 @@ var require_query2 = __commonJS({
           return after(err);
         }
         const vals = this.values.map(utils.prepareValue);
-        client2.native.query(this.text, vals, after);
+        client.native.query(this.text, vals, after);
       } else if (this.queryMode === "extended") {
-        client2.native.query(this.text, [], after);
+        client.native.query(this.text, [], after);
       } else {
-        client2.native.query(this.text, after);
+        client.native.query(this.text, after);
       }
     };
   }
@@ -4631,7 +4631,7 @@ var require_client2 = __commonJS({
     var util = require("util");
     var ConnectionParameters = require_connection_parameters();
     var NativeQuery = require_query2();
-    var Client2 = module2.exports = function(config) {
+    var Client = module2.exports = function(config) {
       EventEmitter.call(this);
       config = config || {};
       this._Promise = config.Promise || global.Promise;
@@ -4658,9 +4658,9 @@ var require_client2 = __commonJS({
       this.port = cp.port;
       this.namedQueries = {};
     };
-    Client2.Query = NativeQuery;
-    util.inherits(Client2, EventEmitter);
-    Client2.prototype._errorAllQueries = function(err) {
+    Client.Query = NativeQuery;
+    util.inherits(Client, EventEmitter);
+    Client.prototype._errorAllQueries = function(err) {
       const enqueueError = (query) => {
         process.nextTick(() => {
           query.native = this.native;
@@ -4674,7 +4674,7 @@ var require_client2 = __commonJS({
       this._queryQueue.forEach(enqueueError);
       this._queryQueue.length = 0;
     };
-    Client2.prototype._connect = function(cb) {
+    Client.prototype._connect = function(cb) {
       const self = this;
       if (this._connecting) {
         process.nextTick(() => cb(new Error("Client has already been connected. You cannot reuse a client.")));
@@ -4707,7 +4707,7 @@ var require_client2 = __commonJS({
         });
       });
     };
-    Client2.prototype.connect = function(callback) {
+    Client.prototype.connect = function(callback) {
       if (callback) {
         this._connect(callback);
         return;
@@ -4722,7 +4722,7 @@ var require_client2 = __commonJS({
         });
       });
     };
-    Client2.prototype.query = function(config, values, callback) {
+    Client.prototype.query = function(config, values, callback) {
       let query;
       let result;
       let readTimeout;
@@ -4790,7 +4790,7 @@ var require_client2 = __commonJS({
       this._pulseQueryQueue();
       return result;
     };
-    Client2.prototype.end = function(cb) {
+    Client.prototype.end = function(cb) {
       const self = this;
       this._ending = true;
       if (!this._connected) {
@@ -4811,10 +4811,10 @@ var require_client2 = __commonJS({
       });
       return result;
     };
-    Client2.prototype._hasActiveQuery = function() {
+    Client.prototype._hasActiveQuery = function() {
       return this._activeQuery && this._activeQuery.state !== "error" && this._activeQuery.state !== "end";
     };
-    Client2.prototype._pulseQueryQueue = function(initialConnection) {
+    Client.prototype._pulseQueryQueue = function(initialConnection) {
       if (!this._connected) {
         return;
       }
@@ -4835,7 +4835,7 @@ var require_client2 = __commonJS({
         self._pulseQueryQueue();
       });
     };
-    Client2.prototype.cancel = function(query) {
+    Client.prototype.cancel = function(query) {
       if (this._activeQuery === query) {
         this.native.cancel(function() {
         });
@@ -4843,14 +4843,14 @@ var require_client2 = __commonJS({
         this._queryQueue.splice(this._queryQueue.indexOf(query), 1);
       }
     };
-    Client2.prototype.ref = function() {
+    Client.prototype.ref = function() {
     };
-    Client2.prototype.unref = function() {
+    Client.prototype.unref = function() {
     };
-    Client2.prototype.setTypeParser = function(oid, format, parseFn) {
+    Client.prototype.setTypeParser = function(oid, format, parseFn) {
       return this._types.setTypeParser(oid, format, parseFn);
     };
-    Client2.prototype.getTypeParser = function(oid, format) {
+    Client.prototype.getTypeParser = function(oid, format) {
       return this._types.getTypeParser(oid, format);
     };
   }
@@ -4868,19 +4868,19 @@ var require_native = __commonJS({
 var require_lib2 = __commonJS({
   "node_modules/pg/lib/index.js"(exports2, module2) {
     "use strict";
-    var Client2 = require_client();
+    var Client = require_client();
     var defaults = require_defaults();
     var Connection = require_connection();
     var Result = require_result();
     var utils = require_utils();
-    var Pool = require_pg_pool();
+    var Pool2 = require_pg_pool();
     var TypeOverrides = require_type_overrides();
     var { DatabaseError } = require_dist();
     var { escapeIdentifier, escapeLiteral } = require_utils();
-    var poolFactory = (Client3) => {
-      return class BoundPool extends Pool {
+    var poolFactory = (Client2) => {
+      return class BoundPool extends Pool2 {
         constructor(options) {
-          super(options, Client3);
+          super(options, Client2);
         }
       };
     };
@@ -4902,7 +4902,7 @@ var require_lib2 = __commonJS({
     if (typeof process.env.NODE_PG_FORCE_NATIVE !== "undefined") {
       module2.exports = new PG(require_native());
     } else {
-      module2.exports = new PG(Client2);
+      module2.exports = new PG(Client);
       Object.defineProperty(module2.exports, "native", {
         configurable: true,
         enumerable: false,
@@ -13882,10 +13882,10 @@ var require_pool_resource = __commonJS({
     var XOAuth2 = require_xoauth2();
     var EventEmitter = require("events");
     var PoolResource = class extends EventEmitter {
-      constructor(pool) {
+      constructor(pool2) {
         super();
-        this.pool = pool;
-        this.options = pool.options;
+        this.pool = pool2;
+        this.options = pool2.options;
         this.logger = this.pool.logger;
         if (this.options.auth) {
           switch ((this.options.auth.type || "").toString().toUpperCase()) {
@@ -16120,9 +16120,9 @@ var require_nodemailer = __commonJS({
 });
 
 // netlify/functions/submit-appointment.cjs
-var { Client } = require_lib2();
+var { Pool } = require_lib2();
 var nodemailer = require_nodemailer();
-var client = new Client({
+var pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false }
 });
@@ -16138,8 +16138,29 @@ var transporter = nodemailer.createTransport({
 function formatDatePTBR(dateStr) {
   const [year, month, day] = dateStr.split("-").map(Number);
   const dateObj = new Date(year, month - 1, day);
-  const weekdays = ["domingo", "segunda-feira", "ter\xE7a-feira", "quarta-feira", "quinta-feira", "sexta-feira", "s\xE1bado"];
-  const months = ["janeiro", "fevereiro", "mar\xE7o", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"];
+  const weekdays = [
+    "domingo",
+    "segunda-feira",
+    "ter\xE7a-feira",
+    "quarta-feira",
+    "quinta-feira",
+    "sexta-feira",
+    "s\xE1bado"
+  ];
+  const months = [
+    "janeiro",
+    "fevereiro",
+    "mar\xE7o",
+    "abril",
+    "maio",
+    "junho",
+    "julho",
+    "agosto",
+    "setembro",
+    "outubro",
+    "novembro",
+    "dezembro"
+  ];
   const weekday = weekdays[dateObj.getDay()];
   const monthName = months[dateObj.getMonth()];
   return `${day} de ${monthName} (${weekday})`;
@@ -16161,6 +16182,7 @@ exports.handler = async (event) => {
     propertyAddress,
     profile,
     otherProfileDescription,
+    // mantido no destructuring
     query,
     companyName,
     role,
@@ -16170,8 +16192,23 @@ exports.handler = async (event) => {
     selectedTimes
   } = data;
   try {
-    await client.connect();
-    const res = await client.query(
+    const check = await pool.query(
+      `SELECT COUNT(*) AS total 
+       FROM appointments 
+       WHERE appt_date = $1 AND appt_time = $2`,
+      [date, selectedTimes.preference]
+    );
+    const total = parseInt(check.rows[0].total, 10);
+    if (total >= 40) {
+      return {
+        statusCode: 400,
+        body: JSON.stringify({
+          success: false,
+          message: "Esse hor\xE1rio j\xE1 atingiu o limite de 40 agendamentos."
+        })
+      };
+    }
+    const res = await pool.query(
       `INSERT INTO appointments (
         full_name,
         email,
@@ -16205,7 +16242,7 @@ exports.handler = async (event) => {
     const formattedDate = formatDatePTBR(date);
     await transporter.sendMail({
       from: process.env.EMAIL_USER,
-      to: email + "; francisco.aires@recife.pe.gov.br; jucicleide.silva@recife.pe.gov.br",
+      to: email,
       subject: "Confirma\xE7\xE3o de Agendamento - Atende Recentro 2025",
       html: `
         <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; background-color: #f9f9f9; padding: 20px;">
@@ -16224,7 +16261,9 @@ exports.handler = async (event) => {
               <li><strong>Data:</strong> ${formattedDate}</li>
               <li><strong>Hor\xE1rio:</strong> ${selectedTimes.preference}</li>
               <li><strong>Endere\xE7o do im\xF3vel:</strong> ${propertyAddress}</li>
-      
+              ${companyName ? `<li><strong>Empresa:</strong> ${companyName}</li>` : ""}
+              ${role ? `<li><strong>Cargo:</strong> ${role}</li>` : ""}
+              ${query ? `<li><strong>Motivo:</strong> ${query}</li>` : ""}
             </ul>
 
             <p style="font-size: 16px;">Estamos ansiosos para receb\xEA-lo(a) no Atende Recentro 2025.</p>
@@ -16236,7 +16275,6 @@ exports.handler = async (event) => {
 
           </div>
         </div>
-
       `
     });
     return {
@@ -16249,8 +16287,6 @@ exports.handler = async (event) => {
       statusCode: 500,
       body: JSON.stringify({ success: false, message: err.message })
     };
-  } finally {
-    await client.end();
   }
 };
 //# sourceMappingURL=submit-appointment.js.map
