@@ -1,5 +1,11 @@
-import pool from "./db.cjs"; // importa o pool corretamente
-import nodemailer from "nodemailer";
+// submit-appointment.cjs
+const { Client } = require("pg");
+const nodemailer = require("nodemailer");
+
+const client = new Client({
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false },
+});
 
 const transporter = nodemailer.createTransport({
   service: "gmail",
@@ -9,7 +15,7 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-export const handler = async (event) => {
+exports.handler = async (event) => {
   if (event.httpMethod !== "POST") {
     return { statusCode: 405, body: "Method Not Allowed" };
   }
@@ -36,14 +42,12 @@ export const handler = async (event) => {
     selectedTimes,
   } = data;
 
-  let client;
-
   try {
-    client = await pool.connect(); // pega conexão do pool corretamente
+    await client.connect();
 
-    const result = await client.query(
+    const res = await client.query(
       `INSERT INTO appointments 
-        (full_name, email, phone, property_address, profile, query, company_name, role, company_address, lgpd_consent, appt_date, appt_time)
+        (full_name, email, phone, property_address, profile, query, company_name, role, company_address, lgpd_consent, appt_date, appt_time) 
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING id`,
       [
         fullName,
@@ -61,27 +65,20 @@ export const handler = async (event) => {
       ]
     );
 
-    const appointmentId = result.rows[0].id;
+    const appointmentId = res.rows[0].id;
 
-    // envia e-mail
     await transporter.sendMail({
       from: process.env.EMAIL_USER,
       to: email,
       subject: "Confirmação de Agendamento - Atende Recentro 2025",
-      text: `Olá ${fullName},\n\nSeu agendamento foi confirmado para o dia ${date} às ${selectedTimes.preference}.\n\nObrigado,\nEquipe Atende Recentro 2025`,
+      text: `Olá ${fullName}, seu agendamento foi confirmado para o dia ${date} às ${selectedTimes.preference}.`,
     });
 
-    return {
-      statusCode: 200,
-      body: JSON.stringify({ success: true, id: appointmentId }),
-    };
+    return { statusCode: 200, body: JSON.stringify({ success: true, id: appointmentId }) };
   } catch (err) {
-    console.error("Erro ao processar agendamento:", err);
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ success: false, message: err.message }),
-    };
+    console.error(err);
+    return { statusCode: 500, body: JSON.stringify({ success: false, message: err.message }) };
   } finally {
-    if (client) client.release(); // libera conexão
+    await client.end();
   }
 };
