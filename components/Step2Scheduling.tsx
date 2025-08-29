@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { AppointmentData } from '../types';
 
 interface Step2Props {
@@ -9,60 +9,26 @@ interface Step2Props {
 }
 
 const AVAILABLE_DATES = ['2025-10-07', '2025-10-08'];
+const AVAILABLE_TIMES = ['14:00', '15:00', '16:00', '17:00', '18:00'];
 
+// Função para formatar a data para exibição
 const formatDateForDisplay = (dateStr: string) => {
   const date = new Date(dateStr);
-  const day = date.getDate() + 1; // Ajuste para exibir o dia correto
+  const day = date.getDate() + 1;
   const monthNames = [
-    'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
-    'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+    'Janeiro','Fevereiro','Março','Abril','Maio','Junho',
+    'Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'
   ];
-  const weekdayNames = ['Domingo','Segunda-feira','Terça-feira','Quarta-feira','Quinta-feira','Sexta-feira','Sábado'];
+  const weekdayNames = [
+    'Domingo','Segunda-feira','Terça-feira','Quarta-feira',
+    'Quinta-feira','Sexta-feira','Sábado'
+  ];
   const month = monthNames[date.getMonth()];
   const weekday = weekdayNames[date.getDay() + 1];
   return `${day} de ${month} (${weekday})`;
 };
 
-interface Slot {
-  time: string;
-  total: number;
-  available: number;
-}
-
 const Step2Scheduling: React.FC<Step2Props> = ({ data, updateData, onNext, onBack }) => {
-  const [slotsByDate, setSlotsByDate] = useState<Record<string, Slot[]>>({});
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  // Buscar slots para uma data específica
-  const fetchSlots = async (date: string) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await fetch(`/.netlify/functions/get-available-slots?date=${date}`);
-      const json = await res.json();
-      if (res.ok && json.success) {
-        setSlotsByDate(prev => ({ ...prev, [date]: json.slots }));
-      } else {
-        setError(json.message || 'Erro ao carregar vagas');
-      }
-    } catch (err) {
-      console.error('Erro ao carregar vagas:', err);
-      setError('Erro ao carregar vagas');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Buscar slots automaticamente quando a data muda
-  useEffect(() => {
-    if (data.date && !slotsByDate[data.date]) {
-      fetchSlots(data.date);
-    }
-  }, [data.date]);
-
-  const availableSlots = data.date ? slotsByDate[data.date] || [] : [];
-
   return (
     <div className="space-y-8">
       <h2 className="text-xl font-semibold text-gray-700 text-center">2. Agendamento</h2>
@@ -74,7 +40,7 @@ const Step2Scheduling: React.FC<Step2Props> = ({ data, updateData, onNext, onBac
           {AVAILABLE_DATES.map((date) => (
             <button
               key={date}
-              onClick={() => updateData({ date, selectedTimes: { preference: '' } })}
+              onClick={() => updateData({ date })} // Corrigido: não reseta selectedTimes
               className={`px-6 py-3 rounded-lg font-medium transition-colors ${
                 data.date === date
                   ? 'bg-blue-600 text-white shadow-md'
@@ -90,25 +56,18 @@ const Step2Scheduling: React.FC<Step2Props> = ({ data, updateData, onNext, onBac
       {/* Seleção do horário */}
       <div className="text-center">
         <p className="text-gray-600 font-medium mb-4">Hora de preferência*</p>
-
-        {loading && <p>Carregando horários...</p>}
-        {error && <p className="text-red-500">{error}</p>}
-
         <div className="flex justify-center flex-wrap gap-4">
-          {availableSlots.map(slot => (
+          {AVAILABLE_TIMES.map((time) => (
             <button
-              key={slot.time}
-              onClick={() => updateData({ selectedTimes: { preference: slot.time } })}
-              disabled={slot.available === 0}
+              key={time}
+              onClick={() => updateData({ selectedTimes: { preference: time } })}
               className={`px-6 py-3 rounded-lg font-medium transition-colors ${
-                data.selectedTimes.preference === slot.time
+                data.selectedTimes.preference === time
                   ? 'bg-blue-600 text-white shadow-md'
-                  : slot.available === 0
-                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
               }`}
             >
-              {slot.time} ({slot.available} vagas restantes)
+              {time}
             </button>
           ))}
         </div>
